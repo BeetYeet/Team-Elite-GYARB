@@ -1,0 +1,7 @@
+C:\Users\RuskiBoi\Dropbox\Balanserade Tal (Multiplication)\Balanserade Tal (Multiplication)\bin\Debug\Balanserade Tal (Multiplication).exe.config
+C:\Users\RuskiBoi\Dropbox\Balanserade Tal (Multiplication)\Balanserade Tal (Multiplication)\bin\Debug\Balanserade Tal (Multiplication).exe
+C:\Users\RuskiBoi\Dropbox\Balanserade Tal (Multiplication)\Balanserade Tal (Multiplication)\bin\Debug\Balanserade Tal (Multiplication).pdb
+C:\Users\RuskiBoi\Dropbox\Balanserade Tal (Multiplication)\Balanserade Tal (Multiplication)\obj\Debug\Balanserade Tal (Multiplication).csprojAssemblyReference.cache
+C:\Users\RuskiBoi\Dropbox\Balanserade Tal (Multiplication)\Balanserade Tal (Multiplication)\obj\Debug\Balanserade Tal (Multiplication).csproj.CoreCompileInputs.cache
+C:\Users\RuskiBoi\Dropbox\Balanserade Tal (Multiplication)\Balanserade Tal (Multiplication)\obj\Debug\Balanserade Tal (Multiplication).exe
+C:\Users\RuskiBoi\Dropbox\Balanserade Tal (Multiplication)\Balanserade Tal (Multiplication)\obj\Debug\Balanserade Tal (Multiplication).pdb
