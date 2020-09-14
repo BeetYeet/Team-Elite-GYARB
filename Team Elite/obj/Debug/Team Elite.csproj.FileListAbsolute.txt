@@ -17,3 +17,10 @@ C:\Users\alfred.engstromer\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Team 
 C:\Users\alfred.engstromer\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.csprojAssemblyReference.cache
 C:\Users\alfred.engstromer\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.exe
 C:\Users\alfred.engstromer\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.pdb
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Team Elite.exe.config
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Team Elite.exe
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Team Elite.pdb
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.csprojAssemblyReference.cache
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.csproj.CoreCompileInputs.cache
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.exe
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.pdb

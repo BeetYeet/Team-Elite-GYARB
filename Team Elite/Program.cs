@@ -31,7 +31,7 @@ namespace Team_Elite
         /// How close to the expected k do we dare to guess.
         /// If current n is greater than the n that generated kFactor this can safely be 1
         /// </summary>
-        const decimal kGuessRatio = 1M;
+        const decimal kGuessRatio = .95M;
         static void Main(string[] args)
         {
             // Define how many threads we can have
@@ -50,11 +50,11 @@ namespace Team_Elite
             Console.WriteLine("Startup complete!");
 
             // Prepare data and storage space for calculations
-            Chunk domain = new Chunk(0, 1000000000);
+            Chunk domain = new Chunk(0, 10000000);
             List<BalancedNumber> output = new List<BalancedNumber>();
 
             // Run the algorithm
-            AsyncChunkDealer(AddativeOptimizedSearch_superior, ref output, domain, 100000000);
+            SyncChunkDealer(AddativeOptimizedSearch_superior, ref output, domain, 1000000);
 
             output.Sort();
 
@@ -196,8 +196,8 @@ namespace Team_Elite
 
         #endregion
 
-        #region AddativeOptimized_old_optimized
-        const ulong domainCutoff = 10000;//ulong.MaxValue / 10 * 9;
+        #region AddativeOptimized_superior
+        const ulong domainCutoff = 50000;//ulong.MaxValue / 10 * 9;
 
 
         /// <summary>
@@ -230,7 +230,7 @@ namespace Team_Elite
             if (guessk)
             {
                 // Guess what k could be
-                BigInteger kBuffer = new BigInteger((decimal)(n+nOverflow) * kFactor * kGuessRatio);
+                BigInteger kBuffer = new BigInteger((decimal)(n + nOverflow) * kFactor * kGuessRatio);
                 if (kBuffer > domainCutoff)
                 {
                     ulong shift = (ulong)((double)kBuffer * .9);
@@ -301,19 +301,18 @@ namespace Team_Elite
 
             while (n + nOverflow < chunk.end)
             {
+                Console.Write("\r Number: {0}", n + nOverflow);
                 if (sumBefore > sumAfter)
                 {
                     k++;
-                    BigInteger sumAfterBuffer = sumAfter + k + kOverflow;
-                    if (sumAfterBuffer > domainCutoff)
+                    sumAfter += (ulong)(k + kOverflow);
+                    if (sumAfter > domainCutoff)
                     {
-                        ulong shift = (ulong)((double)sumAfterBuffer * .9);
+                        ulong shift = (ulong)((double)sumAfter * .9);
                         sumOverflow += shift;
-                        sumAfter = (ulong)(sumAfterBuffer - shift);
+                        sumAfter -= shift;
                         sumBefore -= shift;
                     }
-                    else
-                        sumAfter = (ulong)sumAfterBuffer;
 
                     if (k > domainCutoff)
                     {
@@ -325,13 +324,21 @@ namespace Team_Elite
                 }
                 if (sumBefore == sumAfter)
                 {
-                    Console.WriteLine("Balanced Number: {0}", n + nOverflow);
+                    Console.WriteLine("\r Balanced Number: {0}", n + nOverflow);
                     BalancedNumber bn = new BalancedNumber(n + nOverflow, sumBefore + sumOverflow, k + kOverflow);
                     output.Add(bn);
                 }
-                sumBefore += (ulong)(n + nOverflow);
-                n++;
-                sumAfter -= (ulong)(n + nOverflow);
+                if (n + nOverflow < sumAfter)
+                {
+                    sumBefore += (ulong)(n + nOverflow);
+                    n++;
+                    sumAfter -= (ulong)(n + nOverflow);
+                }
+                else
+                {
+                    throw new OverflowException("Rollback!");
+                }
+
                 if (n > domainCutoff)
                 {
                     ulong shift = (ulong)((double)n * .9);
