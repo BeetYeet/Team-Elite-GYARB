@@ -26,12 +26,12 @@ namespace Team_Elite
         /// How much bigger is k likely to be relative to n.
         /// Increases with n
         /// </summary>
-        static double kFactor = 1.414M;
+        static double kFactor = 1.414;
         /// <summary>
         /// How close to the expected k do we dare to guess.
         /// If current n is greater than the n that generated kFactor this can safely be 1
         /// </summary>
-        const double kGuessRatio = 1M;
+        const double kGuessRatio = 1;
         static void Main(string[] args)
         {
             // Define how many threads we can have
