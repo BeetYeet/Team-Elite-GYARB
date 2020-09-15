@@ -230,7 +230,7 @@ namespace Team_Elite
             if (guessk)
             {
                 // Guess what k could be
-                BigInteger kBuffer = new BigInteger((decimal)(n + nOverflow) * kFactor * kGuessRatio);
+                BigInteger kBuffer = new BigInteger((double)(n + nOverflow) * kFactor * kGuessRatio);
                 if (kBuffer > domainCutoff)
                 {
                     BigInteger shift = (BigInteger)((double)kBuffer * .9);
