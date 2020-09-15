@@ -26,12 +26,12 @@ namespace Team_Elite
         /// How much bigger is k likely to be relative to n.
         /// Increases with n
         /// </summary>
-        static decimal kFactor = 1.3M;
+        static double kFactor = 1.414;
         /// <summary>
         /// How close to the expected k do we dare to guess.
         /// If current n is greater than the n that generated kFactor this can safely be 1
         /// </summary>
-        const decimal kGuessRatio = .95M;
+        const double kGuessRatio = 1;
         static void Main(string[] args)
         {
             // Define how many threads we can have
@@ -42,7 +42,7 @@ namespace Team_Elite
             AddativeOptimizedSearch(new Chunk(new BigInteger(9228778025), new BigInteger(9228778027)), ref KfactorReferenceNumber);
             if (KfactorReferenceNumber[0] != null)
             {
-                kFactor = (decimal)KfactorReferenceNumber[0].k / (decimal)KfactorReferenceNumber[0].number;
+                kFactor = (double)KfactorReferenceNumber[0].k / (double)KfactorReferenceNumber[0].number;
                 Console.WriteLine("kFactor is {0:0.000000000}", kFactor);
             }*/
 
@@ -90,8 +90,8 @@ namespace Team_Elite
                 Console.WriteLine("\n{0} calculated there to be a total of {1} balanced numbers between {2} and {3}", algorithm.GetMethodInfo().Name, output.Count, domain.start, domain.end);
             }
 
-            decimal secondsTaken = sw.ElapsedTicks / (decimal)Stopwatch.Frequency;
-            decimal numbersPerSecond = (decimal)(domain.end - domain.start) / secondsTaken;
+            double secondsTaken = sw.ElapsedTicks / (double)Stopwatch.Frequency;
+            double numbersPerSecond = (double)(domain.end - domain.start) / secondsTaken;
 
             Console.WriteLine("Calculations took {0:0.00}s, for an average of {1:0.0}n/s", secondsTaken, numbersPerSecond);
         }
@@ -445,7 +445,7 @@ namespace Team_Elite
             if (guessk)
             {
                 // Guess what k could be
-                k = new BigInteger((decimal)n * kFactor * kGuessRatio);
+                k = new BigInteger((double)n * kFactor * kGuessRatio);
                 // Calculate the sumAfter for that k
                 sumAfter = (k * (k + 1) / 2) - sumBefore - n;
 
