@@ -37,28 +37,29 @@ namespace Team_Elite
             // Define how many threads we can have
             allowedThreads = lowPowerMode ? Environment.ProcessorCount - 5 : Environment.ProcessorCount - 1;
             /*
-                        // Calculate a resonable kFactor to use as a basis for the calculations
-                        List<BalancedNumber> KfactorReferenceNumber = new List<BalancedNumber>();
-                        AddativeOptimizedSearch(new Chunk(new BigInteger(9228778025), new BigInteger(9228778027)), ref KfactorReferenceNumber);
-                        if (KfactorReferenceNumber[0] != null)
-                        {
-                            kFactor = (decimal)KfactorReferenceNumber[0].k / (decimal)KfactorReferenceNumber[0].number;
-                            Console.WriteLine("kFactor is {0:0.000000000}", kFactor);
-                        }
-                        */
+            // Calculate a resonable kFactor to use as a basis for the calculations
+            List<BalancedNumber> KfactorReferenceNumber = new List<BalancedNumber>();
+            AddativeOptimizedSearch(new Chunk(new BigInteger(9228778025), new BigInteger(9228778027)), ref KfactorReferenceNumber);
+            if (KfactorReferenceNumber[0] != null)
+            {
+                kFactor = (decimal)KfactorReferenceNumber[0].k / (decimal)KfactorReferenceNumber[0].number;
+                Console.WriteLine("kFactor is {0:0.000000000}", kFactor);
+            }*/
+
             // Debug that the startup has completed
             Console.WriteLine("Startup complete!");
 
             // Prepare data and storage space for calculations
-            Chunk domain = new Chunk(0, 10000000);
-            List<BalancedNumber> output = new List<BalancedNumber>();
+            Chunk domain = new Chunk(100000000, 150000000);
+            List<BalancedNumber> output1 = new List<BalancedNumber>();
+            List<BalancedNumber> output2 = new List<BalancedNumber>();
+            Benchmark(AddativeOptimizedSearch_superior, domain, out output1);
+            Benchmark(AddativeOptimizedSearch, domain, out output2);
 
-            // Run the algorithm
-            SyncChunkDealer(AddativeOptimizedSearch_superior, ref output, domain, 1000000);
+            output1.Sort();
+            output1.Sort();
 
-            output.Sort();
-
-            output.ForEach(x =>
+            output1.ForEach(x =>
             {
                 Console.WriteLine("k/n is {0}", (double)x.k / (double)x.number);
             });
@@ -72,7 +73,7 @@ namespace Team_Elite
             output = new List<BalancedNumber>();
 
             Stopwatch sw = Stopwatch.StartNew();
-            AsyncChunkDealer(algorithm, ref output, domain, (domain.end - domain.start) / 100);
+            AsyncChunkDealer(algorithm, ref output, domain, (domain.end - domain.start) / 24);
             sw.Stop();
 
             output.Sort();
@@ -139,7 +140,6 @@ namespace Team_Elite
                 threadId++;
                 Console.WriteLine("New chunk starting at {0}", next);
                 next += chunkSize;
-                Thread.Sleep(200);
             }
             // last chunk was too large
             if (next < domain.end)
@@ -197,7 +197,7 @@ namespace Team_Elite
         #endregion
 
         #region AddativeOptimized_superior
-        const ulong domainCutoff = 50000;//ulong.MaxValue / 10 * 9;
+        const ulong domainCutoff = ulong.MaxValue / 10 * 9;
 
 
         /// <summary>
@@ -219,9 +219,9 @@ namespace Team_Elite
             {
                 // Overflow! shift some into the overflow
                 // any value will do that is less than the overflowing value, but prefer higher values for more efficiency
-                ulong shift = (ulong)((double)sumBeforeBuffer * .9);
+                BigInteger shift = (BigInteger)Math.Floor((double)sumBeforeBuffer * .999);
                 sumOverflow += shift;
-                sumBefore = (ulong)sumBeforeBuffer - shift;
+                sumBefore = (ulong)(sumBeforeBuffer - shift);
             }
             else
             {
@@ -233,7 +233,7 @@ namespace Team_Elite
                 BigInteger kBuffer = new BigInteger((decimal)(n + nOverflow) * kFactor * kGuessRatio);
                 if (kBuffer > domainCutoff)
                 {
-                    ulong shift = (ulong)((double)kBuffer * .9);
+                    BigInteger shift = (BigInteger)((double)kBuffer * .9);
 
                     k = (ulong)(kBuffer - shift);
                     kOverflow += shift;
@@ -245,8 +245,17 @@ namespace Team_Elite
                 // Calculate the sumAfter for that k
                 BigInteger sumUpToK = ((k + kOverflow) * (k + kOverflow + 1) / 2);
                 BigInteger sumBeforePlusN = sumOverflow + sumBefore + n + nOverflow;
-                sumAfter = (ulong)(sumUpToK - sumBeforePlusN);
-
+                {
+                    BigInteger sumAfterBuffer = sumUpToK - sumBeforePlusN;
+                    if (sumAfterBuffer > domainCutoff)
+                    {
+                        BigInteger shift = (BigInteger)((double)sumAfterBuffer * .9);
+                        sumOverflow += shift;
+                        sumAfter = (ulong)(sumAfterBuffer - shift);
+                    }
+                    else
+                        sumAfter = (ulong)sumAfterBuffer;
+                }
                 while (sumBefore > sumAfter)
                 {
                     // final warmup the algorithm to quickly get it to the right numbers
@@ -301,11 +310,8 @@ namespace Team_Elite
 
             while (n + nOverflow < chunk.end)
             {
-                Console.Write("\r Number: {0}", n + nOverflow);
                 if (sumBefore > sumAfter)
                 {
-                    k++;
-                    sumAfter += (ulong)(k + kOverflow);
                     if (sumAfter > domainCutoff)
                     {
                         ulong shift = (ulong)((double)sumAfter * .9);
@@ -313,6 +319,9 @@ namespace Team_Elite
                         sumAfter -= shift;
                         sumBefore -= shift;
                     }
+                    k++;
+                    sumAfter += (ulong)(k + kOverflow);
+
 
                     if (k > domainCutoff)
                     {
