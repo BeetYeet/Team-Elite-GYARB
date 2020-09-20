@@ -14,58 +14,79 @@ namespace Team_Elite
     {
         static int allowedThreads;
         const bool lowPowerMode = false;
+
         /// <summary>
         /// Represents a practically infinite quantity. Used to mark Chunk to only end at infinity
         /// </summary>
         static readonly BigInteger infinity = BigInteger.Pow(new BigInteger(10), 100000);
+
         /// <summary>
         /// Should we try to guess k
         /// </summary>
         const bool guessk = true;
-        /// <summary>
-        /// How much bigger is k likely to be relative to n.
-        /// Increases with n
-        /// </summary>
-        static double kFactor = 1.414;
+
+        private static List<BalancedNumber> kFactors = new List<BalancedNumber>();
+
         /// <summary>
         /// How close to the expected k do we dare to guess.
         /// If current n is greater than the n that generated kFactor this can safely be 1
         /// </summary>
-        const double kGuessRatio = 1;
+        const double kGuessRatio = .999;
+
         static void Main(string[] args)
         {
             // Define how many threads we can have
             allowedThreads = lowPowerMode ? Environment.ProcessorCount - 5 : Environment.ProcessorCount - 1;
-            /*
-            // Calculate a resonable kFactor to use as a basis for the calculations
-            List<BalancedNumber> KfactorReferenceNumber = new List<BalancedNumber>();
-            AddativeOptimizedSearch(new Chunk(new BigInteger(9228778025), new BigInteger(9228778027)), ref KfactorReferenceNumber);
-            if (KfactorReferenceNumber[0] != null)
+
+            kFactors = SaveSystem.LoadBalancedNumberList("BalancedNumberList");
+            foreach (BalancedNumber balanced in kFactors)
             {
-                kFactor = (double)KfactorReferenceNumber[0].k / (double)KfactorReferenceNumber[0].number;
-                Console.WriteLine("kFactor is {0:0.000000000}", kFactor);
-            }*/
+                Console.WriteLine(balanced.number);
+            }
+
+            Console.ReadLine();
 
             // Debug that the startup has completed
             Console.WriteLine("Startup complete!");
 
             // Prepare data and storage space for calculations
-            Chunk domain = new Chunk(100000000, 150000000);
-            List<BalancedNumber> output1 = new List<BalancedNumber>();
-            List<BalancedNumber> output2 = new List<BalancedNumber>();
-            Benchmark(AddativeOptimizedSearch_superior, domain, out output1);
-            Benchmark(AddativeOptimizedSearch, domain, out output2);
+            Chunk domain = new Chunk(kFactors[kFactors.Count-1].number+1, infinity);
+            List<BalancedNumber> output = kFactors;
+            AsyncChunkDealer(AddativeOptimizedSearch_superior, ref output, domain, 100000000);
 
-            output1.Sort();
-            output1.Sort();
-
-            output1.ForEach(x =>
-            {
-                Console.WriteLine("k/n is {0}", (double)x.k / (double)x.number);
-            });
+            // Save the numbers
+            Console.WriteLine("Done! Saving...");
+            Purge(ref output);
+            SaveSystem.SaveBalancedNumberList(output, "BalancedNumberList");
+            Console.WriteLine("Saved {0} balanced numbers", output.Count);
 
             // Algorithm has finished, await user input
             Console.ReadLine();
+        }
+
+
+
+        /// <summary>
+        /// How much bigger is k likely to be relative to n.
+        /// Increases with n
+        /// </summary>
+        /// <returns>
+        /// Largest known kFactor for a number lower than n
+        /// </returns>
+        static double GetKFactor(BigInteger number)
+        {
+            foreach (BalancedNumber balancedNumber in kFactors)
+            {
+                if (number > balancedNumber.number)
+                    return balancedNumber.kFactor;
+            }
+            return 1.3;
+        }
+
+        static void Purge(ref List<BalancedNumber> balancedNumbers)
+        {
+            List<BalancedNumber> distinct = balancedNumbers.Distinct(new BalancedNumberEqualityComparer()).ToList();
+            balancedNumbers = distinct;
         }
 
         private static void Benchmark(ParameterizedThreadStart algorithm, Chunk domain, out List<BalancedNumber> output, bool debugNumbers = false)
@@ -107,6 +128,7 @@ namespace Team_Elite
                 Chunk chunk = new Chunk(next, next + chunkSize);
                 algorithm(chunk, ref output);
                 next += chunkSize;
+                //Thread.Sleep(1000);
             }
             // last chunk was too large
             if (next < domain.end)
@@ -124,7 +146,7 @@ namespace Team_Elite
                 next = 2; // start somewhere resonable
             int threadId = 0;
 
-            while (next + chunkSize < domain.end)
+            while (next + chunkSize < domain.end && !Console.KeyAvailable)
             {
                 if (threads.Count >= allowedThreads)
                 {
@@ -140,17 +162,26 @@ namespace Team_Elite
                 threadId++;
                 Console.WriteLine("New chunk starting at {0}", next);
                 next += chunkSize;
+                //Thread.Sleep(1000);
             }
             // last chunk was too large
-            if (next < domain.end)
+            if (next < domain.end && !Console.KeyAvailable)
             {
                 // we do have space for some more though
                 Chunk chunk = new Chunk(next, domain.end);
                 Thread t = CreateThread(algorithm, string.Format("Thread #{0}", threadId), chunk, ref output);
                 threads.Add(t);
             }
+            Console.WriteLine("No more chunks to deal, now waiting for the remaining threads to complete");
+            Purge(ref output);
+            int outputCount = output.Count;
             while (threads.Count != 0)
             {
+                if(output.Count != outputCount)
+                {
+                    Purge(ref output);
+                    outputCount = output.Count;
+                }
                 List<Thread> toRemove = new List<Thread>();
                 threads.ForEach(thread => { if (!thread.IsAlive) toRemove.Add(thread); });
                 toRemove.ForEach(thread => threads.Remove(thread));
@@ -230,7 +261,7 @@ namespace Team_Elite
             if (guessk)
             {
                 // Guess what k could be
-                BigInteger kBuffer = new BigInteger((double)(n + nOverflow) * kFactor * kGuessRatio);
+                BigInteger kBuffer = new BigInteger((double)(n + nOverflow) * GetKFactor(n + nOverflow) * kGuessRatio);
                 if (kBuffer > domainCutoff)
                 {
                     BigInteger shift = (BigInteger)((double)kBuffer * .9);
@@ -381,7 +412,7 @@ namespace Team_Elite
             if (guessk)
             {
                 // Guess what k could be
-                k = (ulong)(n * kFactor * kGuessRatio);
+                k = (ulong)(n * GetKFactor(n) * kGuessRatio);
                 // Calculate the sumAfter for that k
                 sumAfter = (ulong)(k * (k + 1) / 2) - sumBefore - n;
 
@@ -445,7 +476,7 @@ namespace Team_Elite
             if (guessk)
             {
                 // Guess what k could be
-                k = new BigInteger((double)n * kFactor * kGuessRatio);
+                k = new BigInteger((double)n * GetKFactor(n) * kGuessRatio);
                 // Calculate the sumAfter for that k
                 sumAfter = (k * (k + 1) / 2) - sumBefore - n;
 
