@@ -20,6 +20,10 @@ namespace Team_Elite
         /// </summary>
         static readonly BigInteger infinity = BigInteger.Pow(new BigInteger(10), 100000);
 
+        private static List<BalancedNumber> savedBalancedNumbers = new List<BalancedNumber>();
+
+        const bool checkNumbersAtStartup = false;
+
         /// <summary>
         /// Should we try to guess k
         /// </summary>
@@ -38,10 +42,21 @@ namespace Team_Elite
             // Define how many threads we can have
             allowedThreads = lowPowerMode ? Environment.ProcessorCount - 5 : Environment.ProcessorCount - 1;
 
-            kFactors = SaveSystem.LoadBalancedNumberList("BalancedNumberList");
-            foreach (BalancedNumber balanced in kFactors)
+            savedBalancedNumbers = SaveSystem.LoadBalancedNumberList("BalancedNumberList");
+            kFactors = new List<BalancedNumber>(savedBalancedNumbers);
+            foreach (BalancedNumber balanced in savedBalancedNumbers)
             {
-                Console.WriteLine(balanced.number);
+                if (checkNumbersAtStartup)
+                {
+                    if (AddativeInoptimized_CheckNumber(balanced.number) == null)
+                    {
+                        Console.WriteLine("Not Balanced Number: ", balanced.number);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine(balanced.number);
+                }
             }
 
             Console.ReadLine();
@@ -50,8 +65,8 @@ namespace Team_Elite
             Console.WriteLine("Startup complete!");
 
             // Prepare data and storage space for calculations
-            Chunk domain = new Chunk(kFactors[kFactors.Count-1].number+1, infinity);
-            List<BalancedNumber> output = kFactors;
+            Chunk domain = new Chunk(kFactors[kFactors.Count - 1].number + 1, infinity);
+            List<BalancedNumber> output = savedBalancedNumbers;
             AsyncChunkDealer(AddativeOptimizedSearch_superior, ref output, domain, 100000000);
 
             // Save the numbers
@@ -177,7 +192,7 @@ namespace Team_Elite
             int outputCount = output.Count;
             while (threads.Count != 0)
             {
-                if(output.Count != outputCount)
+                if (output.Count != outputCount)
                 {
                     Purge(ref output);
                     outputCount = output.Count;
@@ -561,7 +576,13 @@ namespace Team_Elite
         {
             BigInteger sumBefore = n * (n - 1) / 2;
             BigInteger sumAfter = 0;
-            for (BigInteger k = n + 1; sumAfter < sumBefore; k++)
+            BigInteger k = n + 1;
+            if (guessk)
+            {
+                k = new BigInteger((double)n * GetKFactor(n) * kGuessRatio);
+                sumAfter = (k * (k - 1) / 2) - (n * (n + 1) / 2);
+            }
+            while (sumAfter < sumBefore)
             {
                 sumAfter += k;
                 if (sumBefore == sumAfter)
@@ -570,6 +591,7 @@ namespace Team_Elite
                     BalancedNumber bn = new BalancedNumber(n, sumBefore, k);
                     return bn;
                 }
+                k++;
             }
             return null;
         }
