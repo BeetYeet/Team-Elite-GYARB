@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -42,8 +44,9 @@ namespace Team_Elite
             // Define how many threads we can have
             allowedThreads = lowPowerMode ? Environment.ProcessorCount - 5 : Environment.ProcessorCount - 1;
 
-            savedBalancedNumbers = SaveSystem.LoadBalancedNumberList("BalancedNumberList");
+            savedBalancedNumbers = SaveSystem.LoadBalancedNumberList();
             kFactors = new List<BalancedNumber>(savedBalancedNumbers);
+
             foreach (BalancedNumber balanced in savedBalancedNumbers)
             {
                 if (checkNumbersAtStartup)
@@ -58,22 +61,31 @@ namespace Team_Elite
                     Console.WriteLine(balanced.number);
                 }
             }
+            CultureInfo customCulture = (CultureInfo)Thread.CurrentThread.CurrentCulture.Clone();
+            customCulture.NumberFormat.NumberDecimalSeparator = ".";
+            Thread.CurrentThread.CurrentCulture = customCulture;
+            for (int i = 3; i < savedBalancedNumbers.Count; i++)
+            {
+                BigInteger expected = GetNextExpected(savedBalancedNumbers[i - 3].number, savedBalancedNumbers[i - 2].number, savedBalancedNumbers[i - 1].number);
+                Console.WriteLine("Expected {0} and it was actually {1}", expected, savedBalancedNumbers[i].number);
+            }
 
-            Console.ReadLine();
+
+            //Console.ReadLine();
 
             // Debug that the startup has completed
             Console.WriteLine("Startup complete!");
 
             // Prepare data and storage space for calculations
-            Chunk domain = new Chunk(kFactors[kFactors.Count - 1].number + 1, infinity);
-            List<BalancedNumber> output = savedBalancedNumbers;
-            AsyncChunkDealer(AddativeOptimizedSearch_superior, ref output, domain, 100000000);
+            Chunk domain = new Chunk(9000000000, infinity);
+            List<BalancedNumber> output = new List<BalancedNumber>();
+            AsyncChunkDealer(AddativeOptimizedSearch_superior, ref output, domain, 10000000);
 
             // Save the numbers
             Console.WriteLine("Done! Saving...");
-            Purge(ref output);
-            SaveSystem.SaveBalancedNumberList(output, "BalancedNumberList");
-            Console.WriteLine("Saved {0} balanced numbers", output.Count);
+            Purge(ref savedBalancedNumbers);
+            SaveSystem.SaveBalancedNumberList(savedBalancedNumbers);
+            Console.WriteLine("Saved {0} balanced numbers", savedBalancedNumbers.Count);
 
             // Algorithm has finished, await user input
             Console.ReadLine();
@@ -97,10 +109,14 @@ namespace Team_Elite
             }
             return 1.3;
         }
-
+        /// <summary>
+        /// Removes duplicates and sorts the given list
+        /// </summary>
+        /// <param name="balancedNumbers">The list to be purged</param>
         static void Purge(ref List<BalancedNumber> balancedNumbers)
         {
             List<BalancedNumber> distinct = balancedNumbers.Distinct(new BalancedNumberEqualityComparer()).ToList();
+            distinct.Sort();
             balancedNumbers = distinct;
         }
 
@@ -132,17 +148,20 @@ namespace Team_Elite
             Console.WriteLine("Calculations took {0:0.00}s, for an average of {1:0.0}n/s", secondsTaken, numbersPerSecond);
         }
 
-        static void SyncChunkDealer(Algorithm algorithm, ref List<BalancedNumber> output, Chunk domain, BigInteger chunkSize)
+        static BigInteger SyncChunkDealer(Algorithm algorithm, ref List<BalancedNumber> output, Chunk domain, BigInteger chunkSize)
         {
             BigInteger next = domain.start;
             if (next < 2)
                 next = 2; // start somewhere resonable
+            BigInteger last = 0;
             while (next + chunkSize < domain.end)
             {
                 // we can fill a whole chunk
                 Chunk chunk = new Chunk(next, next + chunkSize);
                 algorithm(chunk, ref output);
                 next += chunkSize;
+                if (last < next)
+                    last = next;
                 //Thread.Sleep(1000);
             }
             // last chunk was too large
@@ -151,15 +170,19 @@ namespace Team_Elite
                 // we do have space for some more though
                 Chunk chunk = new Chunk(next, domain.end);
                 algorithm(chunk, ref output);
+                if (last < next)
+                    last = domain.end;
             }
+            return last;
         }
-        static void AsyncChunkDealer(ParameterizedThreadStart algorithm, ref List<BalancedNumber> output, Chunk domain, BigInteger chunkSize)
+        static BigInteger AsyncChunkDealer(ParameterizedThreadStart algorithm, ref List<BalancedNumber> output, Chunk domain, BigInteger chunkSize)
         {
             List<Thread> threads = new List<Thread>();
             BigInteger next = domain.start;
             if (next < 2)
                 next = 2; // start somewhere resonable
             int threadId = 0;
+            BigInteger last = 0;
 
             while (next + chunkSize < domain.end && !Console.KeyAvailable)
             {
@@ -177,6 +200,8 @@ namespace Team_Elite
                 threadId++;
                 Console.WriteLine("New chunk starting at {0}", next);
                 next += chunkSize;
+                if (last < next)
+                    last = next;
                 //Thread.Sleep(1000);
             }
             // last chunk was too large
@@ -186,6 +211,8 @@ namespace Team_Elite
                 Chunk chunk = new Chunk(next, domain.end);
                 Thread t = CreateThread(algorithm, string.Format("Thread #{0}", threadId), chunk, ref output);
                 threads.Add(t);
+                if (last < next)
+                    last = domain.end;
             }
             Console.WriteLine("No more chunks to deal, now waiting for the remaining threads to complete");
             Purge(ref output);
@@ -201,6 +228,7 @@ namespace Team_Elite
                 threads.ForEach(thread => { if (!thread.IsAlive) toRemove.Add(thread); });
                 toRemove.ForEach(thread => threads.Remove(thread));
             }
+            return last;
         }
 
         static Thread CreateThread(ParameterizedThreadStart algorithm, string name, Chunk chunk, ref List<BalancedNumber> output)
@@ -243,8 +271,7 @@ namespace Team_Elite
         #endregion
 
         #region AddativeOptimized_superior
-        const ulong domainCutoff = ulong.MaxValue / 10 * 9;
-
+        const ulong domainCutoff = ulong.MaxValue / 10 * 6;
 
         /// <summary>
         /// Algortithm that juggles data types to optimize calculation times
@@ -253,152 +280,67 @@ namespace Team_Elite
         /// <param name="output">Output buffer</param>
         static void AddativeOptimizedSearch_superior(Chunk chunk, ref List<BalancedNumber> output)
         {
-            BigInteger nOverflow = (ulong)chunk.start;
-            BigInteger sumBeforeBuffer = nOverflow * (nOverflow - 1) / 2;
-            BigInteger sumOverflow = 0, kOverflow = 0;
-            ulong sumBefore, k, sumAfter, n = 0;
-            if (nOverflow < domainCutoff)
-                k = (ulong)nOverflow;
-            else
-                kOverflow = nOverflow;
-            if (sumBeforeBuffer > domainCutoff)
-            {
-                // Overflow! shift some into the overflow
-                // any value will do that is less than the overflowing value, but prefer higher values for more efficiency
-                BigInteger shift = (BigInteger)Math.Floor((double)sumBeforeBuffer * .999);
-                sumOverflow += shift;
-                sumBefore = (ulong)(sumBeforeBuffer - shift);
-            }
-            else
-            {
-                sumBefore = (ulong)sumBeforeBuffer;
-            }
+            // safe
+            ulong n = (ulong)chunk.start, k = n;
+            BigInteger sumBeforeS = n * (n - 1) / 2, sumAfterS = 0;
+
+            // volatile
+            ulong sumBeforeV = 0, sumAfterV = 0;
+
             if (guessk)
             {
-                // Guess what k could be
-                BigInteger kBuffer = new BigInteger((double)(n + nOverflow) * GetKFactor(n + nOverflow) * kGuessRatio);
-                if (kBuffer > domainCutoff)
-                {
-                    BigInteger shift = (BigInteger)((double)kBuffer * .9);
-
-                    k = (ulong)(kBuffer - shift);
-                    kOverflow += shift;
-                }
-                else
-                {
-                    k = (ulong)kBuffer;
-                }
-                // Calculate the sumAfter for that k
-                BigInteger sumUpToK = ((k + kOverflow) * (k + kOverflow + 1) / 2);
-                BigInteger sumBeforePlusN = sumOverflow + sumBefore + n + nOverflow;
-                {
-                    BigInteger sumAfterBuffer = sumUpToK - sumBeforePlusN;
-                    if (sumAfterBuffer > domainCutoff)
-                    {
-                        BigInteger shift = (BigInteger)((double)sumAfterBuffer * .9);
-                        sumOverflow += shift;
-                        sumAfter = (ulong)(sumAfterBuffer - shift);
-                    }
-                    else
-                        sumAfter = (ulong)sumAfterBuffer;
-                }
-                while (sumBefore > sumAfter)
-                {
-                    // final warmup the algorithm to quickly get it to the right numbers
-                    k++;
-                    BigInteger sumAfterBuffer = sumAfter + k + kOverflow;
-                    if (sumAfterBuffer > domainCutoff)
-                    {
-                        ulong shift = (ulong)((double)sumAfterBuffer * .9);
-                        sumOverflow += shift;
-                        sumAfter = (ulong)(sumAfterBuffer - shift);
-                    }
-                    else
-                        sumAfter = (ulong)sumAfterBuffer;
-
-                    if (k > domainCutoff)
-                    {
-                        ulong shift = (ulong)((double)k * .9);
-                        k -= shift;
-                        kOverflow += shift;
-                    }
-                }
-            }
-            else
-            {
-                sumAfter = 0;
-                k = n;
-                kOverflow = nOverflow;
-                while (sumBefore > sumAfter)
-                {
-                    // final warmup the algorithm to quickly get it to the right numbers
-                    k++;
-                    BigInteger sumAfterBuffer = sumAfter + k + kOverflow;
-                    if (sumAfterBuffer > domainCutoff)
-                    {
-                        ulong shift = (ulong)((double)sumAfterBuffer * .9);
-                        sumOverflow += shift;
-                        sumAfter = (ulong)(sumAfterBuffer - shift);
-                        sumBefore -= shift;
-                    }
-                    else
-                        sumAfter = (ulong)sumAfterBuffer;
-
-                    if (k > domainCutoff)
-                    {
-                        ulong shift = (ulong)((double)k * .9);
-                        k -= shift;
-                        kOverflow += shift;
-                    }
-                }
+                k = (ulong)(GetKFactor(n) * kGuessRatio * n);
+                sumAfterS = k * (k + 1) / 2 - sumBeforeS - n;
             }
 
-
-            while (n + nOverflow < chunk.end)
+            // fast forward
+            while (sumBeforeS + sumBeforeV > sumAfterS + sumAfterV)
             {
-                if (sumBefore > sumAfter)
+                if (sumAfterV > domainCutoff)
                 {
-                    if (sumAfter > domainCutoff)
+                    sumAfterS += sumAfterV;
+                    sumAfterV = 0;
+                }
+                if (sumBeforeV > domainCutoff)
+                {
+                    sumBeforeS += sumBeforeV;
+                    sumBeforeV = 0;
+                }
+
+                k++;
+                sumAfterV += k;
+            }
+
+            // algorithm itself
+            while (n<=chunk.end)
+            {
+                // sb>sa
+                if(sumBeforeS + sumBeforeV > sumAfterS + sumAfterV)
+                {
+                    if (sumAfterV > domainCutoff)
                     {
-                        ulong shift = (ulong)((double)sumAfter * .9);
-                        sumOverflow += shift;
-                        sumAfter -= shift;
-                        sumBefore -= shift;
+                        sumAfterS += sumAfterV;
+                        sumAfterV = 0;
                     }
+
                     k++;
-                    sumAfter += (ulong)(k + kOverflow);
-
-
-                    if (k > domainCutoff)
-                    {
-                        ulong shift = (ulong)((double)k * .9);
-                        k -= shift;
-                        kOverflow += shift;
-                    }
+                    sumAfterV += k;
                     continue;
                 }
-                if (sumBefore == sumAfter)
+                
+                if(sumBeforeS + sumBeforeV == sumAfterS + sumAfterV)
                 {
-                    Console.WriteLine("\r Balanced Number: {0}", n + nOverflow);
-                    BalancedNumber bn = new BalancedNumber(n + nOverflow, sumBefore + sumOverflow, k + kOverflow);
-                    output.Add(bn);
-                }
-                if (n + nOverflow < sumAfter)
-                {
-                    sumBefore += (ulong)(n + nOverflow);
-                    n++;
-                    sumAfter -= (ulong)(n + nOverflow);
-                }
-                else
-                {
-                    throw new OverflowException("Rollback!");
+                    HandleBalancedNumber(ref output, n, sumBeforeV + sumBeforeS, k);
                 }
 
-                if (n > domainCutoff)
+                // sa>sb  or  sa=sb but we continue
+                sumBeforeV += n;
+                n++;
+                sumAfterV -= n;
+                if (sumBeforeV > domainCutoff)
                 {
-                    ulong shift = (ulong)((double)n * .9);
-                    n -= shift;
-                    nOverflow += shift;
+                    sumBeforeS += sumBeforeV;
+                    sumBeforeV = 0;
                 }
             }
         }
@@ -408,6 +350,31 @@ namespace Team_Elite
             AddativeOptimizedSearch_superior(data.chunk, ref data.output);
         }
         #endregion
+
+        public static BigInteger GetNextExpected(BigInteger m3, BigInteger m2, BigInteger last)
+        {
+            double diff1 = BigInteger.Log10(m3) - BigInteger.Log10(m2);
+            double diff2 = BigInteger.Log10(m2) - BigInteger.Log10(last);
+            // the diffrence between diff1 and diff2 decreases as n goes up
+
+            double diffdiff = diff1 - diff2;
+            return new BigInteger(Math.Pow(10, BigInteger.Log10(last) + 2 * diff2 - diff1));
+        }
+
+        private static void HandleBalancedNumber(ref List<BalancedNumber> output, BigInteger n, BigInteger sum, BigInteger k)
+        {
+            Console.WriteLine("Possible Balanced Number: {0}, Checking validity", n);
+            BalancedNumber bn = AddativeInoptimized_CheckNumber(n);
+            if (bn != null)
+            {
+                new BalancedNumber(n, sum, k);
+                output.Add(bn);
+                savedBalancedNumbers.Add(bn);
+                kFactors.Add(bn);
+                return;
+            }
+            Console.WriteLine("FALSE POSITIVE: {0}", n);
+        }
 
         #region AddativeOptimized_old
 
@@ -461,9 +428,7 @@ namespace Team_Elite
                 }
                 if (sumBefore == sumAfter)
                 {
-                    Console.WriteLine("Balanced Number: {0}", n);
-                    BalancedNumber bn = new BalancedNumber(n, sumBefore, k);
-                    output.Add(bn);
+                    HandleBalancedNumber(ref output, n, sumBefore, k);
                 }
                 sumBefore += n;
                 n++;
@@ -523,9 +488,7 @@ namespace Team_Elite
                 }
                 if (sumBefore == sumAfter)
                 {
-                    Console.WriteLine("Balanced Number: {0}", n);
-                    BalancedNumber bn = new BalancedNumber(n, sumBefore, k);
-                    output.Add(bn);
+                    HandleBalancedNumber(ref output, n, sumBefore, k);
                 }
                 sumBefore += n;
                 n++;
@@ -553,6 +516,7 @@ namespace Team_Elite
                 if (bn != null)
                 {
                     output.Add(bn);
+                    savedBalancedNumbers.Add(bn);
                     output.Sort();
                 }
             }

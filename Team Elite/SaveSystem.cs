@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Numerics;
 
 namespace Team_Elite
 {
@@ -40,13 +41,13 @@ namespace Team_Elite
             data.WriteToBinaryStream(writer);
         }
 
-        public static void SaveBalancedNumberList(List<BalancedNumber> balancedNumbers, string denominator)
+        public static void SaveBalancedNumberList(List<BalancedNumber> balancedNumbers)
         {
             if (!Directory.Exists(basePath))
             {
                 Directory.CreateDirectory(basePath);
             }
-            using (BinaryWriter writer = new BinaryWriter(File.Open(basePath + denominator + ".savedata", FileMode.Create)))
+            using (BinaryWriter writer = new BinaryWriter(File.Open(basePath + "BalancedNumberList.savedata", FileMode.Create)))
             {
                 writer.Write((ushort)balancedNumbers.Count);
                 foreach (BalancedNumber bn in balancedNumbers)
@@ -54,14 +55,13 @@ namespace Team_Elite
                     Write(bn, writer);
                 }
             }
-
         }
-        public static List<BalancedNumber> LoadBalancedNumberList(string denominator)
+        public static List<BalancedNumber> LoadBalancedNumberList()
         {
             List<BalancedNumber> result = new List<BalancedNumber>();
             try
             {
-                using (BinaryReader reader = new BinaryReader(File.Open(basePath + denominator + ".savedata", FileMode.Open)))
+                using (BinaryReader reader = new BinaryReader(File.Open(basePath + "BalancedNumberList.savedata", FileMode.Open)))
                 {
                     ushort length = reader.ReadUInt16();
                     for (int i = 0; i < length; i++)
@@ -72,11 +72,37 @@ namespace Team_Elite
                     }
                 }
             }
-            catch (Exception e)
+            catch (FileNotFoundException e)
             {
                 return new List<BalancedNumber>();
             }
             return result;
+        }
+
+        public static void SaveLast(BigInteger last)
+        {
+            if (!Directory.Exists(basePath))
+            {
+                Directory.CreateDirectory(basePath);
+            }
+            using (BinaryWriter writer = new BinaryWriter(File.Open(basePath + "LastNumber.savedata", FileMode.Create)))
+            {
+                writer.Write(last.ToString());
+            }
+        }
+        public static BigInteger LoadLast()
+        {
+            try
+            {
+                using (BinaryReader reader = new BinaryReader(File.Open(basePath + "LastNumber.savedata", FileMode.Open)))
+                {
+                    return BigInteger.Parse(reader.ReadString());
+                }
+            }
+            catch (FileNotFoundException e)
+            {
+                return new BigInteger(2);
+            }
         }
     }
 }
