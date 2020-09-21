@@ -527,7 +527,20 @@ namespace Team_Elite
                 }
                 output.Sort();
 
-                throw new ArgumentOutOfRangeException("No more unique balanced numbers!");
+                if (AddativeOptimizedSearch_superior(new Chunk(next-100, next + 1000), ref output, true))
+                {
+                    if (returnOnNew)
+                    {
+                        output.Sort();
+                        return true;
+                    }
+                    else
+                    {
+                        returnValue = true;
+                        continue;
+                    }
+                }
+                output.Sort();
                 return false;
             }
             return returnValue;
