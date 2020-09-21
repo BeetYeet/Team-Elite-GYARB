@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
@@ -37,7 +38,7 @@ namespace Team_Elite
         /// How close to the expected k do we dare to guess.
         /// If current n is greater than the n that generated kFactor this can safely be 1
         /// </summary>
-        const double kGuessRatio = .999;
+        const double kGuessRatio = .95;
 
         static void Main(string[] args)
         {
@@ -64,9 +65,9 @@ namespace Team_Elite
             CultureInfo customCulture = (CultureInfo)Thread.CurrentThread.CurrentCulture.Clone();
             customCulture.NumberFormat.NumberDecimalSeparator = ".";
             Thread.CurrentThread.CurrentCulture = customCulture;
-            for (int i = 3; i < savedBalancedNumbers.Count; i++)
+            for (int i = 2; i < savedBalancedNumbers.Count; i++)
             {
-                BigInteger expected = GetNextExpected(savedBalancedNumbers[i - 3].number, savedBalancedNumbers[i - 2].number, savedBalancedNumbers[i - 1].number);
+                BigInteger expected = GetNextExpected(savedBalancedNumbers[i - 2].number, savedBalancedNumbers[i - 1].number);
                 Console.WriteLine("Expected {0} and it was actually {1}", expected, savedBalancedNumbers[i].number);
             }
 
@@ -77,9 +78,17 @@ namespace Team_Elite
             Console.WriteLine("Startup complete!");
 
             // Prepare data and storage space for calculations
-            Chunk domain = new Chunk(9000000000, infinity);
-            List<BalancedNumber> output = new List<BalancedNumber>();
-            AsyncChunkDealer(AddativeOptimizedSearch_superior, ref output, domain, 10000000);
+            Chunk domain = new Chunk(23000000000, infinity);
+            List<BalancedNumber> output = savedBalancedNumbers.GetRange(0, 12);
+            //output.Add(new BalancedNumber(53789260174, new BigInteger(53789260174) * new BigInteger(53789260173)/2,new BigInteger(53789260174 * GetKFactor(new BigInteger(53789260174)))));
+            try
+            {
+                SyncChunkDealer(AddativeGuessSearch, ref output, domain, 1000000000);
+            }
+            catch (ArgumentOutOfRangeException e)
+            {
+
+            }
 
             // Save the numbers
             Console.WriteLine("Done! Saving...");
@@ -158,7 +167,7 @@ namespace Team_Elite
             {
                 // we can fill a whole chunk
                 Chunk chunk = new Chunk(next, next + chunkSize);
-                algorithm(chunk, ref output);
+                algorithm(chunk, ref output, false);
                 next += chunkSize;
                 if (last < next)
                     last = next;
@@ -169,7 +178,7 @@ namespace Team_Elite
             {
                 // we do have space for some more though
                 Chunk chunk = new Chunk(next, domain.end);
-                algorithm(chunk, ref output);
+                algorithm(chunk, ref output, false);
                 if (last < next)
                     last = domain.end;
             }
@@ -236,12 +245,12 @@ namespace Team_Elite
             Thread t = new Thread(algorithm);
             t.Name = name;
             t.Priority = ThreadPriority.AboveNormal;
-            t.Start(new AlgorithmData(chunk, ref output));
+            t.Start(new AlgorithmData(chunk, ref output, false));
             return t;
         }
 
 
-        delegate void Algorithm(Chunk chunk, ref List<BalancedNumber> output);
+        delegate bool Algorithm(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew);
 
         #region HybridAlgorithm
 
@@ -253,17 +262,17 @@ namespace Team_Elite
             {
                 try
                 {
-                    AddativeOptimizedSearch_old(data.chunk, ref data.output);
+                    AddativeOptimizedSearch_old(data.chunk, ref data.output, false);
                 }
                 catch (OverflowException e)
                 {
                     aboveLimit = true;
                     Console.WriteLine("Reached limit of AddativeOptimizedSearch_old");
-                    AddativeOptimizedSearch(data.chunk, ref data.output);
+                    AddativeOptimizedSearch(data.chunk, ref data.output, false);
                 }
             }
             else
-                AddativeOptimizedSearch(data.chunk, ref data.output);
+                AddativeOptimizedSearch(data.chunk, ref data.output, false);
 
             Console.WriteLine("Chunk ended at {0}", data.chunk.end);
         }
@@ -276,10 +285,14 @@ namespace Team_Elite
         /// <summary>
         /// Algortithm that juggles data types to optimize calculation times
         /// </summary>
+        /// <remarks>
+        /// Supports any size of data, but becomes inefficient when k is close to ulong.MaxValue
+        /// </remarks>
         /// <param name="chunk">Domain of the search</param>
         /// <param name="output">Output buffer</param>
-        static void AddativeOptimizedSearch_superior(Chunk chunk, ref List<BalancedNumber> output)
+        static bool AddativeOptimizedSearch_superior(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
         {
+            bool returnValue = false;
             // safe
             ulong n = (ulong)chunk.start, k = n;
             BigInteger sumBeforeS = n * (n - 1) / 2, sumAfterS = 0;
@@ -312,10 +325,10 @@ namespace Team_Elite
             }
 
             // algorithm itself
-            while (n<=chunk.end)
+            while (n <= chunk.end)
             {
                 // sb>sa
-                if(sumBeforeS + sumBeforeV > sumAfterS + sumAfterV)
+                if (sumBeforeS + sumBeforeV > sumAfterS + sumAfterV)
                 {
                     if (sumAfterV > domainCutoff)
                     {
@@ -327,10 +340,19 @@ namespace Team_Elite
                     sumAfterV += k;
                     continue;
                 }
-                
-                if(sumBeforeS + sumBeforeV == sumAfterS + sumAfterV)
+
+                if (sumBeforeS + sumBeforeV == sumAfterS + sumAfterV)
                 {
-                    HandleBalancedNumber(ref output, n, sumBeforeV + sumBeforeS, k);
+                    double percentComplete = (double)(n - chunk.start) / (double)(chunk.end - chunk.start + 1) * 100000;
+                    Console.WriteLine("{0:0.000}%", percentComplete);
+                    if (HandleBalancedNumber(ref output, n) && returnOnNew)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        returnValue = true;
+                    }
                 }
 
                 // sa>sb  or  sa=sb but we continue
@@ -343,38 +365,181 @@ namespace Team_Elite
                     sumBeforeV = 0;
                 }
             }
+            Console.WriteLine("Chunk done!");
+            return returnValue;
         }
         static void AddativeOptimizedSearch_superior(object input)
         {
             AlgorithmData data = input as AlgorithmData;
-            AddativeOptimizedSearch_superior(data.chunk, ref data.output);
+            AddativeOptimizedSearch_superior(data.chunk, ref data.output, data.returnOnNew);
         }
+
+        /// <summary>
+        /// Works with numbers under 21 billion
+        /// </summary>
+        /// <param name="chunk"></param>
+        /// <param name="output"></param>
+        /// <param name="returnOnNew"></param>
+        /// <returns></returns>
+        static bool AddativeOptimizedSearch_superiorVolotile(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
+        {
+            bool returnValue = false;
+            // safe
+            ulong n = (ulong)chunk.start, k = n;
+            BigInteger sum = 0;
+
+            // volatile
+            ulong sumBeforeV = 0, sumAfterV = 0;
+
+            if (guessk)
+            {
+                k = (ulong)(GetKFactor(n) * kGuessRatio * n);
+
+                BigInteger sumBeforeB = n * (n - 1) / 2;
+                BigInteger sumAfterB = k * (k + 1) / 2 - sumBeforeB - n;
+                double factor = 1;
+                while (sumBeforeB > domainCutoff || sumAfterB < 0)
+                {
+                    while (sumBeforeB > domainCutoff)
+                    {
+                        BigInteger shift = new BigInteger((double)domainCutoff * factor);
+                        sumBeforeB -= shift;
+                        sumAfterB -= shift;
+                        sum += shift;
+                    }
+                    factor /= 2;
+                    while (sumAfterB < 0)
+                    {
+                        BigInteger shift = new BigInteger((double)domainCutoff * factor);
+                        sumBeforeB += shift;
+                        sumAfterB += shift;
+                        sum -= shift;
+                    }
+                    factor /= 2;
+                    if (factor < 0.000000001)
+                        throw new OverflowException("Sums would overflow from fitting it into an ulong, use another algorithm");
+                }
+                sumBeforeV = (ulong)sumBeforeB;
+                sumAfterV = (ulong)sumAfterB;
+            }
+
+            // fast forward
+            while (sumBeforeV > sumAfterV)
+            {
+                k++;
+                sumAfterV += k;
+            }
+
+            // algorithm itself
+            while (n <= chunk.end)
+            {
+                // sb>sa
+                if (sumBeforeV > sumAfterV)
+                {
+                    if (sumBeforeV > domainCutoff)
+                    {
+                        sum += sumBeforeV;
+                        sumAfterV -= sumBeforeV;
+                        sumBeforeV = 0;
+                    }
+                    k++;
+                    sumAfterV += k;
+                    continue;
+                }
+
+                if (sumBeforeV == sumAfterV)
+                {
+                    if (HandleBalancedNumber(ref output, n) && returnOnNew)
+                        return true;
+                    else
+                        returnValue = true;
+                }
+
+                // sa>sb  or  sa=sb but we continue
+                sumBeforeV += n;
+                n++;
+                sumAfterV -= n;
+                if (sumBeforeV > domainCutoff)
+                {
+                    sum += sumBeforeV - n;
+                    sumAfterV -= sumBeforeV - n;
+                    sumBeforeV = n;
+                }
+            }
+            return returnValue;
+        }
+        static void AddativeOptimizedSearch_superiorVolotile(object input)
+        {
+            AlgorithmData data = input as AlgorithmData;
+            AddativeOptimizedSearch_superiorVolotile(data.chunk, ref data.output, data.returnOnNew);
+        }
+
+
         #endregion
 
-        public static BigInteger GetNextExpected(BigInteger m3, BigInteger m2, BigInteger last)
+        public static BigInteger GetNextExpected(BigInteger lastlast, BigInteger last)
         {
-            double diff1 = BigInteger.Log10(m3) - BigInteger.Log10(m2);
-            double diff2 = BigInteger.Log10(m2) - BigInteger.Log10(last);
+            double diff = BigInteger.Log10(last) - BigInteger.Log10(lastlast);
             // the diffrence between diff1 and diff2 decreases as n goes up
 
-            double diffdiff = diff1 - diff2;
-            return new BigInteger(Math.Pow(10, BigInteger.Log10(last) + 2 * diff2 - diff1));
+            return new BigInteger(Math.Pow(10, BigInteger.Log10(last) + diff));
         }
 
-        private static void HandleBalancedNumber(ref List<BalancedNumber> output, BigInteger n, BigInteger sum, BigInteger k)
+        private static bool HandleBalancedNumber(ref List<BalancedNumber> output, BigInteger n)
         {
             Console.WriteLine("Possible Balanced Number: {0}, Checking validity", n);
             BalancedNumber bn = AddativeInoptimized_CheckNumber(n);
             if (bn != null)
             {
-                new BalancedNumber(n, sum, k);
                 output.Add(bn);
                 savedBalancedNumbers.Add(bn);
                 kFactors.Add(bn);
-                return;
+                return true;
             }
             Console.WriteLine("FALSE POSITIVE: {0}", n);
+            return false;
         }
+
+
+        #region AddativeGuess
+        static bool AddativeGuessSearch(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
+        {
+            bool returnValue = false;
+            if (output.Count < 2)
+                throw new ArgumentOutOfRangeException("Not enough numbers to get the next one");
+            while (output[output.Count - 1].number < chunk.end && !Console.KeyAvailable)
+            {
+                BigInteger next = GetNextExpected(output[output.Count - 2].number, output[output.Count - 1].number);
+                Console.WriteLine("Guessing next balanced number is {0}", next);
+
+                if (AddativeOptimizedSearch_superior(new Chunk(next, next + 3), ref output, true))
+                {
+                    if (returnOnNew)
+                    {
+                        output.Sort();
+                        return true;
+                    }
+                    else
+                    {
+                        returnValue = true;
+                        continue;
+                    }
+                }
+                output.Sort();
+
+                throw new ArgumentOutOfRangeException("No more unique balanced numbers!");
+                return false;
+            }
+            return returnValue;
+        }
+
+        static void AddativeGuessSearch(object input)
+        {
+            AlgorithmData data = input as AlgorithmData;
+            AddativeGuessSearch(data.chunk, ref data.output, data.returnOnNew);
+        }
+
+        #endregion
 
         #region AddativeOptimized_old
 
@@ -383,8 +548,9 @@ namespace Team_Elite
         /// </summary>
         /// <param name="chunk">Domain of the search</param>
         /// <param name="output">Output buffer</param>
-        static void AddativeOptimizedSearch_old(Chunk chunk, ref List<BalancedNumber> output)
+        static bool AddativeOptimizedSearch_old(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
         {
+            bool returnValue = false;
             if (chunk.end * chunk.end / 2 > ulong.MaxValue)
                 throw new OverflowException("AddativeOptimizedSearch_old's ulongs cannot handle such large numbers, please use AddativeOptimizedSearch instead");
 
@@ -428,17 +594,24 @@ namespace Team_Elite
                 }
                 if (sumBefore == sumAfter)
                 {
-                    HandleBalancedNumber(ref output, n, sumBefore, k);
+                    if (HandleBalancedNumber(ref output, n))
+                    {
+                        if (returnOnNew)
+                            return true;
+
+                        returnValue = true;
+                    }
                 }
                 sumBefore += n;
                 n++;
                 sumAfter -= n;
             }
+            return returnValue;
         }
         static void AddativeOptimizedSearch_old(object input)
         {
             AlgorithmData data = input as AlgorithmData;
-            AddativeOptimizedSearch_old(data.chunk, ref data.output);
+            AddativeOptimizedSearch_old(data.chunk, ref data.output, data.returnOnNew);
         }
         #endregion
 
@@ -448,8 +621,9 @@ namespace Team_Elite
         /// </summary>
         /// <param name="chunk">Domain of the search</param>
         /// <param name="output">Output buffer</param>
-        static void AddativeOptimizedSearch(Chunk chunk, ref List<BalancedNumber> output)
+        static bool AddativeOptimizedSearch(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
         {
+            bool returnValue = false;
             BigInteger n = chunk.start;
             BigInteger sumBefore = n * (n - 1) / 2;
             BigInteger sumAfter, k;
@@ -488,17 +662,23 @@ namespace Team_Elite
                 }
                 if (sumBefore == sumAfter)
                 {
-                    HandleBalancedNumber(ref output, n, sumBefore, k);
+                    if (HandleBalancedNumber(ref output, n))
+                    {
+                        if (returnOnNew)
+                            return true;
+                        returnValue = true;
+                    }
                 }
                 sumBefore += n;
                 n++;
                 sumAfter -= n;
             }
+            return returnValue;
         }
         static void AddativeOptimizedSearch(object input)
         {
             AlgorithmData data = input as AlgorithmData;
-            AddativeOptimizedSearch(data.chunk, ref data.output);
+            AddativeOptimizedSearch(data.chunk, ref data.output, data.returnOnNew);
         }
         #endregion
 
@@ -508,8 +688,9 @@ namespace Team_Elite
         /// </summary>
         /// <param name="chunk">Domain of the search</param>
         /// <param name="output">Output buffer</param>
-        static void AddativeInoptimizedSearch(Chunk chunk, ref List<BalancedNumber> output)
+        static bool AddativeInoptimizedSearch(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
         {
+            bool returnValue = false;
             for (BigInteger n = chunk.start; n <= chunk.end; n++)
             {
                 BalancedNumber bn = AddativeInoptimized_CheckNumber(n);
@@ -518,8 +699,12 @@ namespace Team_Elite
                     output.Add(bn);
                     savedBalancedNumbers.Add(bn);
                     output.Sort();
+                    if (returnOnNew)
+                        return true;
+                    returnValue = true;
                 }
             }
+            return returnValue;
         }
         /// <summary>
         /// Baseline algorithm, should always be right
@@ -529,7 +714,7 @@ namespace Team_Elite
         static void AddativeInoptimizedSearch(object input)
         {
             AlgorithmData data = input as AlgorithmData;
-            AddativeInoptimizedSearch(data.chunk, ref data.output);
+            AddativeInoptimizedSearch(data.chunk, ref data.output, data.returnOnNew);
         }
         /// <summary>
         /// Baseline algorithm, should always be right
