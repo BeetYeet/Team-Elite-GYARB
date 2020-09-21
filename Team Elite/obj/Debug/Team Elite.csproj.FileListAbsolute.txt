@@ -24,3 +24,10 @@ C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.csp
 C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.csproj.CoreCompileInputs.cache
 C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.exe
 C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.pdb
+C:\Users\hanna.lundgren3\Documents\gyarb\Team Elite\obj\Debug\Team Elite.csprojAssemblyReference.cache
+C:\Users\hanna.lundgren3\Documents\gyarb\Team Elite\obj\Debug\Team Elite.csproj.CoreCompileInputs.cache
+C:\Users\hanna.lundgren3\Documents\gyarb\Team Elite\obj\Debug\Team Elite.exe
+C:\Users\hanna.lundgren3\Documents\gyarb\Team Elite\obj\Debug\Team Elite.pdb
+C:\Users\hanna.lundgren3\Documents\gyarb\Team Elite\bin\Debug\Team Elite.exe.config
+C:\Users\hanna.lundgren3\Documents\gyarb\Team Elite\bin\Debug\Team Elite.exe
+C:\Users\hanna.lundgren3\Documents\gyarb\Team Elite\bin\Debug\Team Elite.pdb

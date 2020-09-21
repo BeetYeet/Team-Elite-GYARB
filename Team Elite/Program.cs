@@ -65,9 +65,9 @@ namespace Team_Elite
             Console.WriteLine("Startup complete!");
 
             // Prepare data and storage space for calculations
-            Chunk domain = new Chunk(kFactors[kFactors.Count - 1].number + 1, infinity);
+            Chunk domain = new Chunk(890000000, 4000000000);
             List<BalancedNumber> output = savedBalancedNumbers;
-            AsyncChunkDealer(AddativeOptimizedSearch_superior, ref output, domain, 100000000);
+            AsyncChunkDealer(AddativeOptimizedSearch_superior, ref output, domain, 10000000);
 
             // Save the numbers
             Console.WriteLine("Done! Saving...");
@@ -295,7 +295,7 @@ namespace Team_Elite
                     BigInteger sumAfterBuffer = sumUpToK - sumBeforePlusN;
                     if (sumAfterBuffer > domainCutoff)
                     {
-                        BigInteger shift = (BigInteger)((double)sumAfterBuffer * .9);
+                        BigInteger shift = (BigInteger)((double)sumAfterBuffer * .999);
                         sumOverflow += shift;
                         sumAfter = (ulong)(sumAfterBuffer - shift);
                     }
@@ -309,7 +309,7 @@ namespace Team_Elite
                     BigInteger sumAfterBuffer = sumAfter + k + kOverflow;
                     if (sumAfterBuffer > domainCutoff)
                     {
-                        ulong shift = (ulong)((double)sumAfterBuffer * .9);
+                        BigInteger shift = new BigInteger((double)sumAfterBuffer * .9);
                         sumOverflow += shift;
                         sumAfter = (ulong)(sumAfterBuffer - shift);
                     }
