@@ -105,8 +105,6 @@ namespace Team_Elite
             Console.ReadLine();
         }
 
-
-
         /// <summary>
         /// How much bigger is k likely to be relative to n.
         /// Increases with n
@@ -519,9 +517,48 @@ namespace Team_Elite
 
         #region KEquality
 
-        public static BalancedNumber KEquality_CheckNumber(BigInteger n, BigInteger stopAt)
+        public static BalancedNumber KEquality_CheckNumber_dealer(kEqualityAlgorithm algorithm, BigInteger n, BigInteger stopAt)
         {
-            BigInteger k = new BigInteger((double)n * GetKFactor(n) * kGuessRatio);
+            Task[] tasks = new Task[allowedThreads];
+            for (int i = 0; i < allowedThreads; i++)
+            {
+                tasks[i] = Task.Factory.StartNew( (object obj) => { return algorithm(obj); }, new kEqualityData(n, allowedThreads, i, stopAt));
+            }
+            Task.WaitAll(tasks);
+            BalancedNumber result = null;
+
+            foreach (Task<object> t in tasks)
+            {
+                BalancedNumber number = t.Result as BalancedNumber;
+                if (number != null)
+                    result = number;
+            }
+
+            return result;
+        }
+
+        public delegate object kEqualityAlgorithm(object data);
+        public struct kEqualityData
+        {
+            public BigInteger n, increase, offset, stopAt;
+
+            public kEqualityData(BigInteger n, BigInteger increase, BigInteger offset, BigInteger stopAt)
+            {
+                this.n = n;
+                this.increase = increase;
+                this.offset = offset;
+                this.stopAt = stopAt;
+            }
+        }
+
+        public static BalancedNumber KEquality_CheckNumber_slow(object data)
+        {
+            kEqualityData info = (kEqualityData)data;
+            return KEquality_CheckNumber_slow(info.n, info.increase, info.offset, info.stopAt);
+        }
+        public static BalancedNumber KEquality_CheckNumber_slow(BigInteger n, BigInteger increase, BigInteger offset, BigInteger stopAt)
+        {
+            BigInteger k = new BigInteger((double)n * GetKFactor(n) * kGuessRatio) + offset;
 
             BigInteger sum = n * n * 2;
             while (k <= stopAt)
@@ -533,9 +570,32 @@ namespace Team_Elite
                     return new BalancedNumber(n, n * (n - 1), k);
                 }
                 //Console.WriteLine("Sum is {0} for a k of {1}, which does not equal {2}", kSum, k, sum);
-                k++;
-                if (k % 1000000000 == 0)
-                    Console.WriteLine("k is {0}", k);
+                k += increase;
+            }
+            return null;
+        }
+        public static BalancedNumber KEquality_CheckNumber_mod(object data)
+        {
+            kEqualityData info = (kEqualityData)data;
+            return KEquality_CheckNumber_mod(info.n, info.increase, info.offset, info.stopAt);
+        }
+        public static BalancedNumber KEquality_CheckNumber_mod(BigInteger n, BigInteger increase, BigInteger offset, BigInteger stopAt)
+        {
+            BigInteger k = new BigInteger((double)n * GetKFactor(n) * kGuessRatio) + offset;
+
+            BigInteger val = n * n * 2;
+            while (k <= stopAt)
+            {
+                if (val % k == 0)
+                {
+                    if (val == k * (k + 1))
+                        return new BalancedNumber(n, n * (n - 1), k);
+                    else
+                    {
+                        Console.WriteLine("FALSE POSITIVE: {0} for number {1}", k, n);
+                    }
+                }
+                k += increase;
             }
             return null;
         }
@@ -554,7 +614,7 @@ namespace Team_Elite
             {
                 BigInteger next = GetNextExpected(output[output.Count - 2].number, output[output.Count - 1].number);
                 Console.WriteLine("Guessing next balanced number is {0}", next);
-                BalancedNumber balancedNumber = KEquality_CheckNumber(next, next * 3 / 2);
+                BalancedNumber balancedNumber = KEquality_CheckNumber_dealer(KEquality_CheckNumber_mod, next, next * 3 / 2);
                 if (balancedNumber != null)
                 {
                     output.Add(balancedNumber);
