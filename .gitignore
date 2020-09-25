@@ -17,7 +17,6 @@
 mono_crash.*
 
 # Build results
-[Dd]ebug/
 [Dd]ebugPublic/
 [Rr]elease/
 [Rr]eleases/
@@ -27,7 +26,11 @@ x86/
 [Aa][Rr][Mm]/
 [Aa][Rr][Mm]64/
 bld/
-[Bb]in/
+[Bb]in/*
+![Bb]in/Debug/
+![Bb]in/Debug/*
+![Bb]in/Debug/SavedData/
+![Bb]in/Debug/SavedData/*
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
@@ -92,7 +95,6 @@ StyleCopReport.xml
 *.log
 *.vspscc
 *.vssscc
-.builds
 *.pidb
 *.svclog
 *.scc

@@ -46,6 +46,11 @@ namespace Team_Elite
             allowedThreads = lowPowerMode ? Environment.ProcessorCount - 5 : Environment.ProcessorCount - 1;
 
             savedBalancedNumbers = SaveSystem.LoadBalancedNumberList();
+
+            savedBalancedNumbers.Add(AddativeInoptimized_CheckNumber(6));
+            savedBalancedNumbers.Add(AddativeInoptimized_CheckNumber(35));
+            Purge(ref savedBalancedNumbers);
+
             kFactors = new List<BalancedNumber>(savedBalancedNumbers);
 
             foreach (BalancedNumber balanced in savedBalancedNumbers)
@@ -70,6 +75,11 @@ namespace Team_Elite
                 BigInteger expected = GetNextExpected(savedBalancedNumbers[i - 2].number, savedBalancedNumbers[i - 1].number);
                 Console.WriteLine("Expected {0} and it was actually {1}", expected, savedBalancedNumbers[i].number);
             }
+            Chunk domain = new Chunk(1500000000, 10000000000);
+
+            List<BalancedNumber> output = savedBalancedNumbers.GetRange(0, 2);
+
+
 
 
             //Console.ReadLine();
@@ -77,18 +87,19 @@ namespace Team_Elite
             // Debug that the startup has completed
             Console.WriteLine("Startup complete!");
 
-            // Prepare data and storage space for calculations
-            Chunk domain = new Chunk(23000000000, infinity);
-            List<BalancedNumber> output = savedBalancedNumbers.GetRange(0, 12);
-            //output.Add(new BalancedNumber(53789260174, new BigInteger(53789260174) * new BigInteger(53789260173)/2,new BigInteger(53789260174 * GetKFactor(new BigInteger(53789260174)))));
-            try
-            {
-                SyncChunkDealer(AddativeGuessSearch, ref output, domain, 1000000000);
-            }
-            catch (ArgumentOutOfRangeException e)
-            {
 
+            SyncChunkDealer(AddativeGuessSearch, ref output, domain, 100000000);
+
+            Purge(ref savedBalancedNumbers);
+            for (int i = 0; i < savedBalancedNumbers.Count; i++)
+            {
+                if (i > 0)
+                    Console.WriteLine("#{0:00}: {1:000000000000}, {2}", i, savedBalancedNumbers[i].number, (double)savedBalancedNumbers[i].number / (double)savedBalancedNumbers[i - 1].number);
             }
+
+
+            Console.ReadLine();
+
 
             // Save the numbers
             Console.WriteLine("Done! Saving...");
@@ -111,12 +122,15 @@ namespace Team_Elite
         /// </returns>
         static double GetKFactor(BigInteger number)
         {
-            foreach (BalancedNumber balancedNumber in kFactors)
+            lock (kFactors)
             {
-                if (number > balancedNumber.number)
-                    return balancedNumber.kFactor;
+                foreach (BalancedNumber balancedNumber in kFactors)
+                {
+                    if (number > balancedNumber.number)
+                        return balancedNumber.kFactor;
+                }
+                return 1.3;
             }
-            return 1.3;
         }
         /// <summary>
         /// Removes duplicates and sorts the given list
@@ -479,9 +493,18 @@ namespace Team_Elite
 
         public static BigInteger GetNextExpected(BigInteger lastlast, BigInteger last)
         {
+            return SquareDiff(lastlast, last);
+        }
+
+        private static BigInteger SquareDiff(BigInteger lastlast, BigInteger last)
+        {
+            return last * last / lastlast;
+        }
+
+        private static BigInteger LogDiff(BigInteger lastlast, BigInteger last)
+        {
             double diff = BigInteger.Log10(last) - BigInteger.Log10(lastlast);
             // the diffrence between diff1 and diff2 decreases as n goes up
-
             return new BigInteger(Math.Pow(10, BigInteger.Log10(last) + diff));
         }
 
@@ -500,6 +523,29 @@ namespace Team_Elite
             return false;
         }
 
+        #region KEquality
+
+        public static BalancedNumber KEquality_CheckNumber(BigInteger n, BigInteger stopAt)
+        {
+            BigInteger k = new BigInteger((double)n * GetKFactor(n) * kGuessRatio);
+
+            while (k <= stopAt)
+            {
+                Thread.Sleep(100);
+                BigInteger sum = n * n * 2 - n;
+                if (k * (k + 1) == sum)
+                {
+                    Thread.Sleep(1000);
+                    return new BalancedNumber(n, n * (n - 1), k);
+                }
+                k++;
+            }
+            return null;
+        }
+
+        #endregion
+
+
 
         #region AddativeGuess
         static bool AddativeGuessSearch(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
@@ -511,12 +557,15 @@ namespace Team_Elite
             {
                 BigInteger next = GetNextExpected(output[output.Count - 2].number, output[output.Count - 1].number);
                 Console.WriteLine("Guessing next balanced number is {0}", next);
-
-                if (AddativeOptimizedSearch_superior(new Chunk(next, next + 3), ref output, true))
+                BalancedNumber balancedNumber = KEquality_CheckNumber(next, next * 3 / 2);
+                if (balancedNumber != null)
                 {
+                    output.Add(balancedNumber);
+                    Purge(ref output);
+                    output.Sort();
+                    Console.WriteLine("New Balanced Number: {0}", balancedNumber.number);
                     if (returnOnNew)
                     {
-                        output.Sort();
                         return true;
                     }
                     else
@@ -525,22 +574,6 @@ namespace Team_Elite
                         continue;
                     }
                 }
-                output.Sort();
-
-                if (AddativeOptimizedSearch_superior(new Chunk(next-100, next + 1000), ref output, true))
-                {
-                    if (returnOnNew)
-                    {
-                        output.Sort();
-                        return true;
-                    }
-                    else
-                    {
-                        returnValue = true;
-                        continue;
-                    }
-                }
-                output.Sort();
                 return false;
             }
             return returnValue;

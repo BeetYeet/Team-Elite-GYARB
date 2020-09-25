@@ -58,6 +58,10 @@ namespace Team_Elite
         }
         public static List<BalancedNumber> LoadBalancedNumberList()
         {
+            if (!Directory.Exists(basePath))
+            {
+                Directory.CreateDirectory(basePath);
+            }
             List<BalancedNumber> result = new List<BalancedNumber>();
             try
             {
@@ -74,6 +78,7 @@ namespace Team_Elite
             }
             catch (FileNotFoundException e)
             {
+                Console.WriteLine("Error loading list");
                 return new List<BalancedNumber>();
             }
             return result;
