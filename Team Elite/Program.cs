@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -614,6 +615,63 @@ namespace Team_Elite
             return null;
         }
 
+        public static BalancedNumber KEquality_CheckNumber(BigInteger n, BigInteger k)
+        {
+            BigInteger value = n * n * 2;
+            if(value == k * (k + 1))
+            {
+                return new BalancedNumber(n, n * (n - 1), k);
+            }
+            return null;
+        }
+
+
+        public static BalancedNumber KEquality_CheckNumber_algebraic(BigInteger n, BigInteger stopAt)
+        {
+            double val = (double)n * (double)n * 2;
+            // guess a bad k
+            double k = (double)n * GetKFactor(n) * kGuessRatio;
+            //Console.WriteLine("k starts as {0}", k);
+            double stopAtDouble = (double)stopAt;
+            while (k < stopAtDouble)
+            {
+                double newk = Math.Sqrt(val - k);
+                k = newk;
+                //Console.WriteLine("k is now {0}", k);
+                if (Math.Abs(newk - k) < .001)
+                {
+                    return KEquality_CheckNumber(n, new BigInteger(k));
+                }
+            }
+            return null;
+        }
+        public static BigInteger Sqrt(BigInteger n)
+        {
+            if (n == 0) return 0;
+            if (n > 0)
+            {
+                int bitLength = Convert.ToInt32(Math.Ceiling(BigInteger.Log(n, 2)));
+                BigInteger root = BigInteger.One << (bitLength / 2);
+
+                while (!isSqrt(n, root))
+                {
+                    root += n / root;
+                    root /= 2;
+                }
+
+                return root;
+            }
+
+            throw new ArithmeticException("NaN");
+        }
+
+        private static Boolean isSqrt(BigInteger n, BigInteger root)
+        {
+            BigInteger lowerBound = root * root;
+            BigInteger upperBound = (root + 1) * (root + 1);
+
+            return (n >= lowerBound && n < upperBound);
+        }
 
         #endregion
 
@@ -629,7 +687,7 @@ namespace Team_Elite
             {
                 BigInteger next = GetNextExpected(output[output.Count - 2].number, output[output.Count - 1].number);
                 Console.WriteLine("Guessing next balanced number is {0}", next);
-                BalancedNumber balancedNumber = KEquality_kDealer(KEquality_CheckNumber_mod, next, next * 3 / 2);
+                BalancedNumber balancedNumber = KEquality_CheckNumber_algebraic(next, 3 * next / 2);
                 if (balancedNumber != null)
                 {
                     output.Add(balancedNumber);
