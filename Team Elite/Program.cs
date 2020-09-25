@@ -38,7 +38,7 @@ namespace Team_Elite
         /// How close to the expected k do we dare to guess.
         /// If current n is greater than the n that generated kFactor this can safely be 1
         /// </summary>
-        const double kGuessRatio = .95;
+        const double kGuessRatio = 1;
 
         static void Main(string[] args)
         {
@@ -64,7 +64,7 @@ namespace Team_Elite
                 }
                 else
                 {
-                    Console.WriteLine(balanced.number);
+                    Console.WriteLine(balanced.k);
                 }
             }
             CultureInfo customCulture = (CultureInfo)Thread.CurrentThread.CurrentCulture.Clone();
@@ -75,20 +75,14 @@ namespace Team_Elite
                 BigInteger expected = GetNextExpected(savedBalancedNumbers[i - 2].number, savedBalancedNumbers[i - 1].number);
                 Console.WriteLine("Expected {0} and it was actually {1}", expected, savedBalancedNumbers[i].number);
             }
-            Chunk domain = new Chunk(1500000000, 10000000000);
-
-            List<BalancedNumber> output = savedBalancedNumbers.GetRange(0, 2);
-
-
-
-
-            //Console.ReadLine();
 
             // Debug that the startup has completed
             Console.WriteLine("Startup complete!");
 
 
-            SyncChunkDealer(AddativeGuessSearch, ref output, domain, 100000000);
+            Chunk domain = new Chunk(0, infinity);
+            List<BalancedNumber> output = savedBalancedNumbers.GetRange(0, 2);
+            SyncChunkDealer(AddativeGuessSearch, ref output, domain, infinity);
 
             Purge(ref savedBalancedNumbers);
             for (int i = 0; i < savedBalancedNumbers.Count; i++)
@@ -529,16 +523,19 @@ namespace Team_Elite
         {
             BigInteger k = new BigInteger((double)n * GetKFactor(n) * kGuessRatio);
 
+            BigInteger sum = n * n * 2;
             while (k <= stopAt)
             {
-                Thread.Sleep(100);
-                BigInteger sum = n * n * 2 - n;
-                if (k * (k + 1) == sum)
+                BigInteger kSum = k * (k + 1);
+                if (kSum == sum)
                 {
-                    Thread.Sleep(1000);
+                    //Console.WriteLine("Sum is {0} for a k of {1}, which equals {2}!", kSum, k, sum);
                     return new BalancedNumber(n, n * (n - 1), k);
                 }
+                //Console.WriteLine("Sum is {0} for a k of {1}, which does not equal {2}", kSum, k, sum);
                 k++;
+                if (k % 1000000000 == 0)
+                    Console.WriteLine("k is {0}", k);
             }
             return null;
         }
@@ -563,6 +560,9 @@ namespace Team_Elite
                     output.Add(balancedNumber);
                     Purge(ref output);
                     output.Sort();
+                    kFactors.Add(balancedNumber);
+                    Purge(ref kFactors);
+                    kFactors.Sort();
                     Console.WriteLine("New Balanced Number: {0}", balancedNumber.number);
                     if (returnOnNew)
                     {
