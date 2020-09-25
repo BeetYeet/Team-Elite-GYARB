@@ -85,17 +85,18 @@ namespace Team_Elite
             Chunk domain = new Chunk(0, infinity);
             List<BalancedNumber> output = savedBalancedNumbers.GetRange(0, 2);
             SyncChunkDealer(AddativeGuessSearch, ref output, domain, infinity);
-
+            savedBalancedNumbers.AddRange(output);
             Purge(ref savedBalancedNumbers);
+            savedBalancedNumbers.Sort();
             for (int i = 0; i < savedBalancedNumbers.Count; i++)
             {
                 if (i > 0)
-                    Console.WriteLine("#{0:00}: {1:000000000000}, {2}", i, savedBalancedNumbers[i].number, (double)savedBalancedNumbers[i].number / (double)savedBalancedNumbers[i - 1].number);
+                    Console.WriteLine("#{0:00}-   n: {1:000000000000000000},   n/n-1: {2:0.00000000000000},   k: {3:0000000000000000000},   sum: {4}", i, savedBalancedNumbers[i].number, (double)savedBalancedNumbers[i].number / (double)savedBalancedNumbers[i - 1].number, savedBalancedNumbers[i].k, savedBalancedNumbers[i].sideSum);
+                else
+                    Console.WriteLine("#{0:00}-   n: {1:000000000000000000},   n/n-1:              N/A,   k: {2:0000000000000000000},   sum: {3}", i+1, savedBalancedNumbers[i].number, savedBalancedNumbers[i].k, savedBalancedNumbers[i].sideSum);
+                if (i == 18)
+                    Console.WriteLine();
             }
-
-
-            Console.ReadLine();
-
 
             // Save the numbers
             Console.WriteLine("Done! Saving...");
@@ -618,13 +619,27 @@ namespace Team_Elite
         public static BalancedNumber KEquality_CheckNumber(BigInteger n, BigInteger k)
         {
             BigInteger value = n * n * 2;
-            if(value == k * (k + 1))
+            if (value == k * (k + 1))
             {
                 return new BalancedNumber(n, n * (n - 1), k);
             }
             return null;
         }
 
+        public struct KEqualityAlgrebreicData
+        {
+            public BigInteger n, stopAt;
+            public KEqualityAlgrebreicData(BigInteger n, BigInteger stopAt)
+            {
+                this.n = n;
+                this.stopAt = stopAt;
+            }
+        }
+        public static BalancedNumber KEquality_CheckNumber_algebraic(object obj)
+        {
+            KEqualityAlgrebreicData data = (KEqualityAlgrebreicData)obj;
+            return KEquality_CheckNumber_algebraic(data.n, data.stopAt);
+        }
 
         public static BalancedNumber KEquality_CheckNumber_algebraic(BigInteger n, BigInteger stopAt)
         {
@@ -673,6 +688,49 @@ namespace Team_Elite
             return (n >= lowerBound && n < upperBound);
         }
 
+
+        public static BalancedNumber KEquality_SweepForward(BigInteger n, BigInteger delta)
+        {
+            Task[] tasks = new Task[(int)delta];
+            for (int i = 0; i < delta; i++)
+            {
+                tasks[i] = Task.Factory.StartNew((object obj) => { return KEquality_CheckNumber_algebraic(obj); }, new KEqualityAlgrebreicData(n + i, (n + i) * 3 / 2));
+            }
+            Task.WaitAll(tasks);
+
+            foreach (Task<BalancedNumber> t in tasks)
+            {
+                BalancedNumber result = t.Result;
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+
+            return null;
+        }
+
+        public static BalancedNumber KEquality_SweepBackward(BigInteger n, BigInteger delta)
+        {
+            Task[] tasks = new Task[((int)delta) - 1];
+            for (int i = 1; i < delta; i++)
+            {
+                tasks[i-1] = Task.Factory.StartNew((object obj) => { return KEquality_CheckNumber_algebraic(obj); }, new KEqualityAlgrebreicData(n - i, (n - i) * 3 / 2));
+            }
+            Task.WaitAll(tasks);
+
+            foreach (Task<BalancedNumber> t in tasks)
+            {
+                BalancedNumber result = t.Result;
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+
+            return null;
+        }
+
         #endregion
 
 
@@ -690,13 +748,35 @@ namespace Team_Elite
                 BalancedNumber balancedNumber = KEquality_CheckNumber_algebraic(next, 3 * next / 2);
                 if (balancedNumber != null)
                 {
-                    output.Add(balancedNumber);
-                    Purge(ref output);
-                    output.Sort();
-                    kFactors.Add(balancedNumber);
-                    Purge(ref kFactors);
-                    kFactors.Sort();
-                    Console.WriteLine("New Balanced Number: {0}", balancedNumber.number);
+                    output = HandleCorrectGuess(output, balancedNumber);
+                    if (returnOnNew)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        returnValue = true;
+                        continue;
+                    }
+                }
+                balancedNumber = KEquality_SweepForward(next, 100);
+                if (balancedNumber != null)
+                {
+                    output = HandleCorrectGuess(output, balancedNumber);
+                    if (returnOnNew)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        returnValue = true;
+                        continue;
+                    }
+                }
+                balancedNumber = KEquality_SweepBackward(next, 100);
+                if (balancedNumber != null)
+                {
+                    output = HandleCorrectGuess(output, balancedNumber);
                     if (returnOnNew)
                     {
                         return true;
@@ -710,6 +790,18 @@ namespace Team_Elite
                 return false;
             }
             return returnValue;
+        }
+
+        private static List<BalancedNumber> HandleCorrectGuess(List<BalancedNumber> output, BalancedNumber balancedNumber)
+        {
+            output.Add(balancedNumber);
+            Purge(ref output);
+            output.Sort();
+            kFactors.Add(balancedNumber);
+            Purge(ref kFactors);
+            kFactors.Sort();
+            Console.WriteLine("New Balanced Number: {0}", balancedNumber.number);
+            return output;
         }
 
         static void AddativeGuessSearch(object input)
