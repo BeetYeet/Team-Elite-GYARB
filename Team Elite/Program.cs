@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -116,12 +117,17 @@ namespace Team_Elite
         {
             lock (kFactors)
             {
+                double best = 1.3;
                 foreach (BalancedNumber balancedNumber in kFactors)
                 {
                     if (number > balancedNumber.number)
-                        return balancedNumber.kFactor;
+                    {
+                        if (balancedNumber.kFactor > best)
+                            best = balancedNumber.kFactor;
+                    }
                 }
-                return 1.3;
+                //Console.WriteLine("kFactor is {0}", best);
+                return best;
             }
         }
         /// <summary>
@@ -517,12 +523,13 @@ namespace Team_Elite
 
         #region KEquality
 
-        public static BalancedNumber KEquality_CheckNumber_dealer(kEqualityAlgorithm algorithm, BigInteger n, BigInteger stopAt)
+        public static BalancedNumber KEquality_kDealer(kEqualityAlgorithm algorithm, BigInteger n, BigInteger stopAt)
         {
-            Task[] tasks = new Task[allowedThreads];
-            for (int i = 0; i < allowedThreads; i++)
+            int numTasks = allowedThreads * 10;
+            Task[] tasks = new Task[numTasks];
+            for (int i = 0; i < numTasks; i++)
             {
-                tasks[i] = Task.Factory.StartNew( (object obj) => { return algorithm(obj); }, new kEqualityData(n, allowedThreads, i, stopAt));
+                tasks[i] = Task.Factory.StartNew((object obj) => { return algorithm(obj); }, new kEqualityData(n, numTasks, i, stopAt));
             }
             Task.WaitAll(tasks);
             BalancedNumber result = null;
@@ -588,17 +595,25 @@ namespace Team_Elite
             {
                 if (val % k == 0)
                 {
+                    Stopwatch sw = Stopwatch.StartNew();
                     if (val == k * (k + 1))
                         return new BalancedNumber(n, n * (n - 1), k);
                     else
                     {
                         Console.WriteLine("FALSE POSITIVE: {0} for number {1}", k, n);
                     }
+                    sw.Stop();
+                    Console.WriteLine("    False positive took {0}ms to check\n", sw.ElapsedMilliseconds);
+                    if (k * (k + 1) > val)
+                    {
+                        return null;
+                    }
                 }
                 k += increase;
             }
             return null;
         }
+
 
         #endregion
 
@@ -614,7 +629,7 @@ namespace Team_Elite
             {
                 BigInteger next = GetNextExpected(output[output.Count - 2].number, output[output.Count - 1].number);
                 Console.WriteLine("Guessing next balanced number is {0}", next);
-                BalancedNumber balancedNumber = KEquality_CheckNumber_dealer(KEquality_CheckNumber_mod, next, next * 3 / 2);
+                BalancedNumber balancedNumber = KEquality_kDealer(KEquality_CheckNumber_mod, next, next * 3 / 2);
                 if (balancedNumber != null)
                 {
                     output.Add(balancedNumber);
