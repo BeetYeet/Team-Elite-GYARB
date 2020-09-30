@@ -93,7 +93,7 @@ namespace Team_Elite
                 if (i > 0)
                     Console.WriteLine("#{0:00}-   n: {1:000000000000000000},   n/n-1: {2:0.00000000000000},   k: {3:0000000000000000000},   sum: {4}", i, savedBalancedNumbers[i].number, (double)savedBalancedNumbers[i].number / (double)savedBalancedNumbers[i - 1].number, savedBalancedNumbers[i].k, savedBalancedNumbers[i].sideSum);
                 else
-                    Console.WriteLine("#{0:00}-   n: {1:000000000000000000},   n/n-1:              N/A,   k: {2:0000000000000000000},   sum: {3}", i+1, savedBalancedNumbers[i].number, savedBalancedNumbers[i].k, savedBalancedNumbers[i].sideSum);
+                    Console.WriteLine("#{0:00}-   n: {1:000000000000000000},   n/n-1:              N/A,   k: {2:0000000000000000000},   sum: {3}", i + 1, savedBalancedNumbers[i].number, savedBalancedNumbers[i].k, savedBalancedNumbers[i].sideSum);
                 if (i == 18)
                     Console.WriteLine();
             }
@@ -107,6 +107,8 @@ namespace Team_Elite
             // Algorithm has finished, await user input
             Console.ReadLine();
         }
+
+        #region framework
 
         /// <summary>
         /// How much bigger is k likely to be relative to n.
@@ -265,552 +267,9 @@ namespace Team_Elite
 
 
         delegate bool Algorithm(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew);
-
-        #region HybridAlgorithm
-
-        static bool aboveLimit = false;
-        static void HybridSearch(object input)
-        {
-            AlgorithmData data = input as AlgorithmData;
-            if (!aboveLimit)
-            {
-                try
-                {
-                    AddativeOptimizedSearch_old(data.chunk, ref data.output, false);
-                }
-                catch (OverflowException e)
-                {
-                    aboveLimit = true;
-                    Console.WriteLine("Reached limit of AddativeOptimizedSearch_old");
-                    AddativeOptimizedSearch(data.chunk, ref data.output, false);
-                }
-            }
-            else
-                AddativeOptimizedSearch(data.chunk, ref data.output, false);
-
-            Console.WriteLine("Chunk ended at {0}", data.chunk.end);
-        }
-
         #endregion
 
-        #region AddativeOptimized_superior
-        const ulong domainCutoff = ulong.MaxValue / 10 * 6;
-
-        /// <summary>
-        /// Algortithm that juggles data types to optimize calculation times
-        /// </summary>
-        /// <remarks>
-        /// Supports any size of data, but becomes inefficient when k is close to ulong.MaxValue
-        /// </remarks>
-        /// <param name="chunk">Domain of the search</param>
-        /// <param name="output">Output buffer</param>
-        static bool AddativeOptimizedSearch_superior(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
-        {
-            bool returnValue = false;
-            // safe
-            ulong n = (ulong)chunk.start, k = n;
-            BigInteger sumBeforeS = n * (n - 1) / 2, sumAfterS = 0;
-
-            // volatile
-            ulong sumBeforeV = 0, sumAfterV = 0;
-
-            if (guessk)
-            {
-                k = (ulong)(GetKFactor(n) * kGuessRatio * n);
-                sumAfterS = k * (k + 1) / 2 - sumBeforeS - n;
-            }
-
-            // fast forward
-            while (sumBeforeS + sumBeforeV > sumAfterS + sumAfterV)
-            {
-                if (sumAfterV > domainCutoff)
-                {
-                    sumAfterS += sumAfterV;
-                    sumAfterV = 0;
-                }
-                if (sumBeforeV > domainCutoff)
-                {
-                    sumBeforeS += sumBeforeV;
-                    sumBeforeV = 0;
-                }
-
-                k++;
-                sumAfterV += k;
-            }
-
-            // algorithm itself
-            while (n <= chunk.end)
-            {
-                // sb>sa
-                if (sumBeforeS + sumBeforeV > sumAfterS + sumAfterV)
-                {
-                    if (sumAfterV > domainCutoff)
-                    {
-                        sumAfterS += sumAfterV;
-                        sumAfterV = 0;
-                    }
-
-                    k++;
-                    sumAfterV += k;
-                    continue;
-                }
-
-                if (sumBeforeS + sumBeforeV == sumAfterS + sumAfterV)
-                {
-                    double percentComplete = (double)(n - chunk.start) / (double)(chunk.end - chunk.start + 1) * 100000;
-                    Console.WriteLine("{0:0.000}%", percentComplete);
-                    if (HandleBalancedNumber(ref output, n) && returnOnNew)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        returnValue = true;
-                    }
-                }
-
-                // sa>sb  or  sa=sb but we continue
-                sumBeforeV += n;
-                n++;
-                sumAfterV -= n;
-                if (sumBeforeV > domainCutoff)
-                {
-                    sumBeforeS += sumBeforeV;
-                    sumBeforeV = 0;
-                }
-            }
-            Console.WriteLine("Chunk done!");
-            return returnValue;
-        }
-        static void AddativeOptimizedSearch_superior(object input)
-        {
-            AlgorithmData data = input as AlgorithmData;
-            AddativeOptimizedSearch_superior(data.chunk, ref data.output, data.returnOnNew);
-        }
-
-        /// <summary>
-        /// Works with numbers under 21 billion
-        /// </summary>
-        /// <param name="chunk"></param>
-        /// <param name="output"></param>
-        /// <param name="returnOnNew"></param>
-        /// <returns></returns>
-        static bool AddativeOptimizedSearch_superiorVolotile(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
-        {
-            bool returnValue = false;
-            // safe
-            ulong n = (ulong)chunk.start, k = n;
-            BigInteger sum = 0;
-
-            // volatile
-            ulong sumBeforeV = 0, sumAfterV = 0;
-
-            if (guessk)
-            {
-                k = (ulong)(GetKFactor(n) * kGuessRatio * n);
-
-                BigInteger sumBeforeB = n * (n - 1) / 2;
-                BigInteger sumAfterB = k * (k + 1) / 2 - sumBeforeB - n;
-                double factor = 1;
-                while (sumBeforeB > domainCutoff || sumAfterB < 0)
-                {
-                    while (sumBeforeB > domainCutoff)
-                    {
-                        BigInteger shift = new BigInteger((double)domainCutoff * factor);
-                        sumBeforeB -= shift;
-                        sumAfterB -= shift;
-                        sum += shift;
-                    }
-                    factor /= 2;
-                    while (sumAfterB < 0)
-                    {
-                        BigInteger shift = new BigInteger((double)domainCutoff * factor);
-                        sumBeforeB += shift;
-                        sumAfterB += shift;
-                        sum -= shift;
-                    }
-                    factor /= 2;
-                    if (factor < 0.000000001)
-                        throw new OverflowException("Sums would overflow from fitting it into an ulong, use another algorithm");
-                }
-                sumBeforeV = (ulong)sumBeforeB;
-                sumAfterV = (ulong)sumAfterB;
-            }
-
-            // fast forward
-            while (sumBeforeV > sumAfterV)
-            {
-                k++;
-                sumAfterV += k;
-            }
-
-            // algorithm itself
-            while (n <= chunk.end)
-            {
-                // sb>sa
-                if (sumBeforeV > sumAfterV)
-                {
-                    if (sumBeforeV > domainCutoff)
-                    {
-                        sum += sumBeforeV;
-                        sumAfterV -= sumBeforeV;
-                        sumBeforeV = 0;
-                    }
-                    k++;
-                    sumAfterV += k;
-                    continue;
-                }
-
-                if (sumBeforeV == sumAfterV)
-                {
-                    if (HandleBalancedNumber(ref output, n) && returnOnNew)
-                        return true;
-                    else
-                        returnValue = true;
-                }
-
-                // sa>sb  or  sa=sb but we continue
-                sumBeforeV += n;
-                n++;
-                sumAfterV -= n;
-                if (sumBeforeV > domainCutoff)
-                {
-                    sum += sumBeforeV - n;
-                    sumAfterV -= sumBeforeV - n;
-                    sumBeforeV = n;
-                }
-            }
-            return returnValue;
-        }
-        static void AddativeOptimizedSearch_superiorVolotile(object input)
-        {
-            AlgorithmData data = input as AlgorithmData;
-            AddativeOptimizedSearch_superiorVolotile(data.chunk, ref data.output, data.returnOnNew);
-        }
-
-
-        #endregion
-
-        public static BigInteger GetNextExpected(BigInteger lastlast, BigInteger last)
-        {
-            return SquareDiff(lastlast, last);
-        }
-
-        private static BigInteger SquareDiff(BigInteger lastlast, BigInteger last)
-        {
-            return last * last / lastlast;
-        }
-
-        private static BigInteger LogDiff(BigInteger lastlast, BigInteger last)
-        {
-            double diff = BigInteger.Log10(last) - BigInteger.Log10(lastlast);
-            // the diffrence between diff1 and diff2 decreases as n goes up
-            return new BigInteger(Math.Pow(10, BigInteger.Log10(last) + diff));
-        }
-
-        private static bool HandleBalancedNumber(ref List<BalancedNumber> output, BigInteger n)
-        {
-            Console.WriteLine("Possible Balanced Number: {0}, Checking validity", n);
-            BalancedNumber bn = AddativeInoptimized_CheckNumber(n);
-            if (bn != null)
-            {
-                output.Add(bn);
-                savedBalancedNumbers.Add(bn);
-                kFactors.Add(bn);
-                return true;
-            }
-            Console.WriteLine("FALSE POSITIVE: {0}", n);
-            return false;
-        }
-
-        #region KEquality
-
-        public static BalancedNumber KEquality_kDealer(kEqualityAlgorithm algorithm, BigInteger n, BigInteger stopAt)
-        {
-            int numTasks = allowedThreads * 10;
-            Task[] tasks = new Task[numTasks];
-            for (int i = 0; i < numTasks; i++)
-            {
-                tasks[i] = Task.Factory.StartNew((object obj) => { return algorithm(obj); }, new kEqualityData(n, numTasks, i, stopAt));
-            }
-            Task.WaitAll(tasks);
-            BalancedNumber result = null;
-
-            foreach (Task<object> t in tasks)
-            {
-                BalancedNumber number = t.Result as BalancedNumber;
-                if (number != null)
-                    result = number;
-            }
-
-            return result;
-        }
-
-        public delegate object kEqualityAlgorithm(object data);
-        public struct kEqualityData
-        {
-            public BigInteger n, increase, offset, stopAt;
-
-            public kEqualityData(BigInteger n, BigInteger increase, BigInteger offset, BigInteger stopAt)
-            {
-                this.n = n;
-                this.increase = increase;
-                this.offset = offset;
-                this.stopAt = stopAt;
-            }
-        }
-
-        public static BalancedNumber KEquality_CheckNumber_slow(object data)
-        {
-            kEqualityData info = (kEqualityData)data;
-            return KEquality_CheckNumber_slow(info.n, info.increase, info.offset, info.stopAt);
-        }
-        public static BalancedNumber KEquality_CheckNumber_slow(BigInteger n, BigInteger increase, BigInteger offset, BigInteger stopAt)
-        {
-            BigInteger k = new BigInteger((double)n * GetKFactor(n) * kGuessRatio) + offset;
-
-            BigInteger sum = n * n * 2;
-            while (k <= stopAt)
-            {
-                BigInteger kSum = k * (k + 1);
-                if (kSum == sum)
-                {
-                    //Console.WriteLine("Sum is {0} for a k of {1}, which equals {2}!", kSum, k, sum);
-                    return new BalancedNumber(n, n * (n - 1), k);
-                }
-                //Console.WriteLine("Sum is {0} for a k of {1}, which does not equal {2}", kSum, k, sum);
-                k += increase;
-            }
-            return null;
-        }
-        public static BalancedNumber KEquality_CheckNumber_mod(object data)
-        {
-            kEqualityData info = (kEqualityData)data;
-            return KEquality_CheckNumber_mod(info.n, info.increase, info.offset, info.stopAt);
-        }
-        public static BalancedNumber KEquality_CheckNumber_mod(BigInteger n, BigInteger increase, BigInteger offset, BigInteger stopAt)
-        {
-            BigInteger k = new BigInteger((double)n * GetKFactor(n) * kGuessRatio) + offset;
-
-            BigInteger val = n * n * 2;
-            while (k <= stopAt)
-            {
-                if (val % k == 0)
-                {
-                    Stopwatch sw = Stopwatch.StartNew();
-                    if (val == k * (k + 1))
-                        return new BalancedNumber(n, n * (n - 1), k);
-                    else
-                    {
-                        Console.WriteLine("FALSE POSITIVE: {0} for number {1}", k, n);
-                    }
-                    sw.Stop();
-                    Console.WriteLine("    False positive took {0}ms to check\n", sw.ElapsedMilliseconds);
-                    if (k * (k + 1) > val)
-                    {
-                        return null;
-                    }
-                }
-                k += increase;
-            }
-            return null;
-        }
-
-        public static BalancedNumber KEquality_CheckNumber(BigInteger n, BigInteger k)
-        {
-            BigInteger value = n * n * 2;
-            if (value == k * (k + 1))
-            {
-                return new BalancedNumber(n, n * (n - 1), k);
-            }
-            return null;
-        }
-
-        public struct KEqualityAlgrebreicData
-        {
-            public BigInteger n, stopAt;
-            public KEqualityAlgrebreicData(BigInteger n, BigInteger stopAt)
-            {
-                this.n = n;
-                this.stopAt = stopAt;
-            }
-        }
-        public static BalancedNumber KEquality_CheckNumber_algebraic(object obj)
-        {
-            KEqualityAlgrebreicData data = (KEqualityAlgrebreicData)obj;
-            return KEquality_CheckNumber_algebraic(data.n, data.stopAt);
-        }
-
-        public static BalancedNumber KEquality_CheckNumber_algebraic(BigInteger n, BigInteger stopAt)
-        {
-            double val = (double)n * (double)n * 2;
-            // guess a bad k
-            double k = (double)n * GetKFactor(n) * kGuessRatio;
-            //Console.WriteLine("k starts as {0}", k);
-            double stopAtDouble = (double)stopAt;
-            while (k < stopAtDouble)
-            {
-                double newk = Math.Sqrt(val - k);
-                k = newk;
-                //Console.WriteLine("k is now {0}", k);
-                if (Math.Abs(newk - k) < .001)
-                {
-                    return KEquality_CheckNumber(n, new BigInteger(k));
-                }
-            }
-            return null;
-        }
-        public static BigInteger Sqrt(BigInteger n)
-        {
-            if (n == 0) return 0;
-            if (n > 0)
-            {
-                int bitLength = Convert.ToInt32(Math.Ceiling(BigInteger.Log(n, 2)));
-                BigInteger root = BigInteger.One << (bitLength / 2);
-
-                while (!isSqrt(n, root))
-                {
-                    root += n / root;
-                    root /= 2;
-                }
-
-                return root;
-            }
-
-            throw new ArithmeticException("NaN");
-        }
-
-        private static Boolean isSqrt(BigInteger n, BigInteger root)
-        {
-            BigInteger lowerBound = root * root;
-            BigInteger upperBound = (root + 1) * (root + 1);
-
-            return (n >= lowerBound && n < upperBound);
-        }
-
-
-        public static BalancedNumber KEquality_SweepForward(BigInteger n, BigInteger delta)
-        {
-            Task[] tasks = new Task[(int)delta];
-            for (int i = 0; i < delta; i++)
-            {
-                tasks[i] = Task.Factory.StartNew((object obj) => { return KEquality_CheckNumber_algebraic(obj); }, new KEqualityAlgrebreicData(n + i, (n + i) * 3 / 2));
-            }
-            Task.WaitAll(tasks);
-
-            foreach (Task<BalancedNumber> t in tasks)
-            {
-                BalancedNumber result = t.Result;
-                if (result != null)
-                {
-                    return result;
-                }
-            }
-
-            return null;
-        }
-
-        public static BalancedNumber KEquality_SweepBackward(BigInteger n, BigInteger delta)
-        {
-            Task[] tasks = new Task[((int)delta) - 1];
-            for (int i = 1; i < delta; i++)
-            {
-                tasks[i-1] = Task.Factory.StartNew((object obj) => { return KEquality_CheckNumber_algebraic(obj); }, new KEqualityAlgrebreicData(n - i, (n - i) * 3 / 2));
-            }
-            Task.WaitAll(tasks);
-
-            foreach (Task<BalancedNumber> t in tasks)
-            {
-                BalancedNumber result = t.Result;
-                if (result != null)
-                {
-                    return result;
-                }
-            }
-
-            return null;
-        }
-
-        #endregion
-
-
-
-        #region AddativeGuess
-        static bool AddativeGuessSearch(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
-        {
-            bool returnValue = false;
-            if (output.Count < 2)
-                throw new ArgumentOutOfRangeException("Not enough numbers to get the next one");
-            while (output[output.Count - 1].number < chunk.end && !Console.KeyAvailable)
-            {
-                BigInteger next = GetNextExpected(output[output.Count - 2].number, output[output.Count - 1].number);
-                Console.WriteLine("Guessing next balanced number is {0}", next);
-                BalancedNumber balancedNumber = KEquality_CheckNumber_algebraic(next, 3 * next / 2);
-                if (balancedNumber != null)
-                {
-                    output = HandleCorrectGuess(output, balancedNumber);
-                    if (returnOnNew)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        returnValue = true;
-                        continue;
-                    }
-                }
-                balancedNumber = KEquality_SweepForward(next, 100);
-                if (balancedNumber != null)
-                {
-                    output = HandleCorrectGuess(output, balancedNumber);
-                    if (returnOnNew)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        returnValue = true;
-                        continue;
-                    }
-                }
-                balancedNumber = KEquality_SweepBackward(next, 100);
-                if (balancedNumber != null)
-                {
-                    output = HandleCorrectGuess(output, balancedNumber);
-                    if (returnOnNew)
-                    {
-                        return true;
-                    }
-                    else
-                    {
-                        returnValue = true;
-                        continue;
-                    }
-                }
-                return false;
-            }
-            return returnValue;
-        }
-
-        private static List<BalancedNumber> HandleCorrectGuess(List<BalancedNumber> output, BalancedNumber balancedNumber)
-        {
-            output.Add(balancedNumber);
-            Purge(ref output);
-            output.Sort();
-            kFactors.Add(balancedNumber);
-            Purge(ref kFactors);
-            kFactors.Sort();
-            Console.WriteLine("New Balanced Number: {0}", balancedNumber.number);
-            return output;
-        }
-
-        static void AddativeGuessSearch(object input)
-        {
-            AlgorithmData data = input as AlgorithmData;
-            AddativeGuessSearch(data.chunk, ref data.output, data.returnOnNew);
-        }
-
-        #endregion
+        #region gen_1
 
         #region AddativeOptimized_old
 
@@ -1016,5 +475,563 @@ namespace Team_Elite
             return null;
         }
         #endregion
+        #endregion
+
+        #region gen_2
+
+
+        #region HybridAlgorithm
+
+        static bool aboveLimit = false;
+        static void HybridSearch(object input)
+        {
+            AlgorithmData data = input as AlgorithmData;
+            if (!aboveLimit)
+            {
+                try
+                {
+                    AddativeOptimizedSearch_old(data.chunk, ref data.output, false);
+                }
+                catch (OverflowException e)
+                {
+                    aboveLimit = true;
+                    Console.WriteLine("Reached limit of AddativeOptimizedSearch_old");
+                    AddativeOptimizedSearch(data.chunk, ref data.output, false);
+                }
+            }
+            else
+                AddativeOptimizedSearch(data.chunk, ref data.output, false);
+
+            Console.WriteLine("Chunk ended at {0}", data.chunk.end);
+        }
+
+        #endregion
+
+
+        #region AddativeOptimized_superior
+        const ulong domainCutoff = ulong.MaxValue / 10 * 6;
+        /// <summary>
+        /// Algortithm that juggles data types to optimize calculation times
+        /// </summary>
+        /// <remarks>
+        /// Supports any size of data, but becomes inefficient when k is close to ulong.MaxValue
+        /// </remarks>
+        /// <param name="chunk">Domain of the search</param>
+        /// <param name="output">Output buffer</param>
+        static bool AddativeOptimizedSearch_superior(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
+        {
+            bool returnValue = false;
+            // safe
+            ulong n = (ulong)chunk.start, k = n;
+            BigInteger sumBeforeS = n * (n - 1) / 2, sumAfterS = 0;
+
+            // volatile
+            ulong sumBeforeV = 0, sumAfterV = 0;
+
+            if (guessk)
+            {
+                k = (ulong)(GetKFactor(n) * kGuessRatio * n);
+                sumAfterS = k * (k + 1) / 2 - sumBeforeS - n;
+            }
+
+            // fast forward
+            while (sumBeforeS + sumBeforeV > sumAfterS + sumAfterV)
+            {
+                if (sumAfterV > domainCutoff)
+                {
+                    sumAfterS += sumAfterV;
+                    sumAfterV = 0;
+                }
+                if (sumBeforeV > domainCutoff)
+                {
+                    sumBeforeS += sumBeforeV;
+                    sumBeforeV = 0;
+                }
+
+                k++;
+                sumAfterV += k;
+            }
+
+            // algorithm itself
+            while (n <= chunk.end)
+            {
+                // sb>sa
+                if (sumBeforeS + sumBeforeV > sumAfterS + sumAfterV)
+                {
+                    if (sumAfterV > domainCutoff)
+                    {
+                        sumAfterS += sumAfterV;
+                        sumAfterV = 0;
+                    }
+
+                    k++;
+                    sumAfterV += k;
+                    continue;
+                }
+
+                if (sumBeforeS + sumBeforeV == sumAfterS + sumAfterV)
+                {
+                    double percentComplete = (double)(n - chunk.start) / (double)(chunk.end - chunk.start + 1) * 100000;
+                    Console.WriteLine("{0:0.000}%", percentComplete);
+                    if (HandleBalancedNumber(ref output, n) && returnOnNew)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        returnValue = true;
+                    }
+                }
+
+                // sa>sb  or  sa=sb but we continue
+                sumBeforeV += n;
+                n++;
+                sumAfterV -= n;
+                if (sumBeforeV > domainCutoff)
+                {
+                    sumBeforeS += sumBeforeV;
+                    sumBeforeV = 0;
+                }
+            }
+            Console.WriteLine("Chunk done!");
+            return returnValue;
+        }
+        static void AddativeOptimizedSearch_superior(object input)
+        {
+            AlgorithmData data = input as AlgorithmData;
+            AddativeOptimizedSearch_superior(data.chunk, ref data.output, data.returnOnNew);
+        }
+
+        #endregion
+
+        #region AddativeOptimized_superior_volotile
+        /// <summary>
+        /// Works with numbers under 21 billion
+        /// </summary>
+        /// <param name="chunk"></param>
+        /// <param name="output"></param>
+        /// <param name="returnOnNew"></param>
+        /// <returns></returns>
+        static bool AddativeOptimizedSearch_superiorVolotile(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
+        {
+            bool returnValue = false;
+            // safe
+            ulong n = (ulong)chunk.start, k = n;
+            BigInteger sum = 0;
+
+            // volatile
+            ulong sumBeforeV = 0, sumAfterV = 0;
+
+            if (guessk)
+            {
+                k = (ulong)(GetKFactor(n) * kGuessRatio * n);
+
+                BigInteger sumBeforeB = n * (n - 1) / 2;
+                BigInteger sumAfterB = k * (k + 1) / 2 - sumBeforeB - n;
+                double factor = 1;
+                while (sumBeforeB > domainCutoff || sumAfterB < 0)
+                {
+                    while (sumBeforeB > domainCutoff)
+                    {
+                        BigInteger shift = new BigInteger((double)domainCutoff * factor);
+                        sumBeforeB -= shift;
+                        sumAfterB -= shift;
+                        sum += shift;
+                    }
+                    factor /= 2;
+                    while (sumAfterB < 0)
+                    {
+                        BigInteger shift = new BigInteger((double)domainCutoff * factor);
+                        sumBeforeB += shift;
+                        sumAfterB += shift;
+                        sum -= shift;
+                    }
+                    factor /= 2;
+                    if (factor < 0.000000001)
+                        throw new OverflowException("Sums would overflow from fitting it into an ulong, use another algorithm");
+                }
+                sumBeforeV = (ulong)sumBeforeB;
+                sumAfterV = (ulong)sumAfterB;
+            }
+
+            // fast forward
+            while (sumBeforeV > sumAfterV)
+            {
+                k++;
+                sumAfterV += k;
+            }
+
+            // algorithm itself
+            while (n <= chunk.end)
+            {
+                // sb>sa
+                if (sumBeforeV > sumAfterV)
+                {
+                    if (sumBeforeV > domainCutoff)
+                    {
+                        sum += sumBeforeV;
+                        sumAfterV -= sumBeforeV;
+                        sumBeforeV = 0;
+                    }
+                    k++;
+                    sumAfterV += k;
+                    continue;
+                }
+
+                if (sumBeforeV == sumAfterV)
+                {
+                    if (HandleBalancedNumber(ref output, n) && returnOnNew)
+                        return true;
+                    else
+                        returnValue = true;
+                }
+
+                // sa>sb  or  sa=sb but we continue
+                sumBeforeV += n;
+                n++;
+                sumAfterV -= n;
+                if (sumBeforeV > domainCutoff)
+                {
+                    sum += sumBeforeV - n;
+                    sumAfterV -= sumBeforeV - n;
+                    sumBeforeV = n;
+                }
+            }
+            return returnValue;
+        }
+        static void AddativeOptimizedSearch_superiorVolotile(object input)
+        {
+            AlgorithmData data = input as AlgorithmData;
+            AddativeOptimizedSearch_superiorVolotile(data.chunk, ref data.output, data.returnOnNew);
+        }
+        #endregion
+
+        #endregion
+
+        #region gen_3
+
+        public static BigInteger GetNextExpected(BigInteger lastlast, BigInteger last)
+        {
+            return SquareDiff(lastlast, last);
+        }
+
+        private static BigInteger SquareDiff(BigInteger lastlast, BigInteger last)
+        {
+            return last * last / lastlast;
+        }
+
+        private static BigInteger LogDiff(BigInteger lastlast, BigInteger last)
+        {
+            double diff = BigInteger.Log10(last) - BigInteger.Log10(lastlast);
+            // the diffrence between diff1 and diff2 decreases as n goes up
+            return new BigInteger(Math.Pow(10, BigInteger.Log10(last) + diff));
+        }
+
+
+        #region KEquality
+
+        public static BalancedNumber KEquality_kDealer(kEqualityAlgorithm algorithm, BigInteger n, BigInteger stopAt)
+        {
+            int numTasks = allowedThreads * 10;
+            Task[] tasks = new Task[numTasks];
+            for (int i = 0; i < numTasks; i++)
+            {
+                tasks[i] = Task.Factory.StartNew((object obj) => { return algorithm(obj); }, new kEqualityData(n, numTasks, i, stopAt));
+            }
+            Task.WaitAll(tasks);
+            BalancedNumber result = null;
+
+            foreach (Task<object> t in tasks)
+            {
+                BalancedNumber number = t.Result as BalancedNumber;
+                if (number != null)
+                    result = number;
+            }
+
+            return result;
+        }
+
+        public delegate object kEqualityAlgorithm(object data);
+        public struct kEqualityData
+        {
+            public BigInteger n, increase, offset, stopAt;
+
+            public kEqualityData(BigInteger n, BigInteger increase, BigInteger offset, BigInteger stopAt)
+            {
+                this.n = n;
+                this.increase = increase;
+                this.offset = offset;
+                this.stopAt = stopAt;
+            }
+        }
+
+        public static BalancedNumber KEquality_CheckNumber_slow(object data)
+        {
+            kEqualityData info = (kEqualityData)data;
+            return KEquality_CheckNumber_slow(info.n, info.increase, info.offset, info.stopAt);
+        }
+        public static BalancedNumber KEquality_CheckNumber_slow(BigInteger n, BigInteger increase, BigInteger offset, BigInteger stopAt)
+        {
+            BigInteger k = new BigInteger((double)n * GetKFactor(n) * kGuessRatio) + offset;
+
+            BigInteger sum = n * n * 2;
+            while (k <= stopAt)
+            {
+                BigInteger kSum = k * (k + 1);
+                if (kSum == sum)
+                {
+                    //Console.WriteLine("Sum is {0} for a k of {1}, which equals {2}!", kSum, k, sum);
+                    return new BalancedNumber(n, n * (n - 1), k);
+                }
+                //Console.WriteLine("Sum is {0} for a k of {1}, which does not equal {2}", kSum, k, sum);
+                k += increase;
+            }
+            return null;
+        }
+        public static BalancedNumber KEquality_CheckNumber_mod(object data)
+        {
+            kEqualityData info = (kEqualityData)data;
+            return KEquality_CheckNumber_mod(info.n, info.increase, info.offset, info.stopAt);
+        }
+        public static BalancedNumber KEquality_CheckNumber_mod(BigInteger n, BigInteger increase, BigInteger offset, BigInteger stopAt)
+        {
+            BigInteger k = new BigInteger((double)n * GetKFactor(n) * kGuessRatio) + offset;
+
+            BigInteger val = n * n * 2;
+            while (k <= stopAt)
+            {
+                if (val % k == 0)
+                {
+                    Stopwatch sw = Stopwatch.StartNew();
+                    if (val == k * (k + 1))
+                        return new BalancedNumber(n, n * (n - 1), k);
+                    else
+                    {
+                        Console.WriteLine("FALSE POSITIVE: {0} for number {1}", k, n);
+                    }
+                    sw.Stop();
+                    Console.WriteLine("    False positive took {0}ms to check\n", sw.ElapsedMilliseconds);
+                    if (k * (k + 1) > val)
+                    {
+                        return null;
+                    }
+                }
+                k += increase;
+            }
+            return null;
+        }
+
+        public static BalancedNumber KEquality_CheckNumber(BigInteger n, BigInteger k)
+        {
+            BigInteger value = n * n * 2;
+            if (value == k * (k + 1))
+            {
+                return new BalancedNumber(n, n * (n - 1), k);
+            }
+            return null;
+        }
+
+        public struct KEqualityAlgrebreicData
+        {
+            public BigInteger n, stopAt;
+            public KEqualityAlgrebreicData(BigInteger n, BigInteger stopAt)
+            {
+                this.n = n;
+                this.stopAt = stopAt;
+            }
+        }
+        public static BalancedNumber KEquality_CheckNumber_algebraic(object obj)
+        {
+            KEqualityAlgrebreicData data = (KEqualityAlgrebreicData)obj;
+            return KEquality_CheckNumber_algebraic(data.n, data.stopAt);
+        }
+
+        public static BalancedNumber KEquality_CheckNumber_algebraic(BigInteger n, BigInteger stopAt)
+        {
+            double val = (double)n * (double)n * 2;
+            // guess a bad k
+            double k = (double)n * GetKFactor(n) * kGuessRatio;
+            //Console.WriteLine("k starts as {0}", k);
+            double stopAtDouble = (double)stopAt;
+            while (k < stopAtDouble)
+            {
+                double newk = Math.Sqrt(val - k);
+                k = newk;
+                //Console.WriteLine("k is now {0}", k);
+                if (Math.Abs(newk - k) < .001)
+                {
+                    return KEquality_CheckNumber(n, new BigInteger(k));
+                }
+            }
+            return null;
+        }
+        public static BigInteger Sqrt(BigInteger n)
+        {
+            if (n == 0) return 0;
+            if (n > 0)
+            {
+                int bitLength = Convert.ToInt32(Math.Ceiling(BigInteger.Log(n, 2)));
+                BigInteger root = BigInteger.One << (bitLength / 2);
+
+                while (!isSqrt(n, root))
+                {
+                    root += n / root;
+                    root /= 2;
+                }
+
+                return root;
+            }
+
+            throw new ArithmeticException("NaN");
+        }
+
+        private static Boolean isSqrt(BigInteger n, BigInteger root)
+        {
+            BigInteger lowerBound = root * root;
+            BigInteger upperBound = (root + 1) * (root + 1);
+
+            return (n >= lowerBound && n < upperBound);
+        }
+
+
+        public static BalancedNumber KEquality_SweepForward(BigInteger n, BigInteger delta)
+        {
+            Task[] tasks = new Task[(int)delta];
+            for (int i = 0; i < delta; i++)
+            {
+                tasks[i] = Task.Factory.StartNew((object obj) => { return KEquality_CheckNumber_algebraic(obj); }, new KEqualityAlgrebreicData(n + i, (n + i) * 3 / 2));
+            }
+            Task.WaitAll(tasks);
+
+            foreach (Task<BalancedNumber> t in tasks)
+            {
+                BalancedNumber result = t.Result;
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+
+            return null;
+        }
+
+        public static BalancedNumber KEquality_SweepBackward(BigInteger n, BigInteger delta)
+        {
+            Task[] tasks = new Task[((int)delta) - 1];
+            for (int i = 1; i < delta; i++)
+            {
+                tasks[i - 1] = Task.Factory.StartNew((object obj) => { return KEquality_CheckNumber_algebraic(obj); }, new KEqualityAlgrebreicData(n - i, (n - i) * 3 / 2));
+            }
+            Task.WaitAll(tasks);
+
+            foreach (Task<BalancedNumber> t in tasks)
+            {
+                BalancedNumber result = t.Result;
+                if (result != null)
+                {
+                    return result;
+                }
+            }
+
+            return null;
+        }
+
+        #endregion
+
+
+
+        #region AddativeGuess
+        static bool AddativeGuessSearch(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
+        {
+            bool returnValue = false;
+            if (output.Count < 2)
+                throw new ArgumentOutOfRangeException("Not enough numbers to get the next one");
+            while (output[output.Count - 1].number < chunk.end && !Console.KeyAvailable)
+            {
+                BigInteger next = GetNextExpected(output[output.Count - 2].number, output[output.Count - 1].number);
+                Console.WriteLine("Guessing next balanced number is {0}", next);
+                BalancedNumber balancedNumber = KEquality_CheckNumber_algebraic(next, 3 * next / 2);
+                if (balancedNumber != null)
+                {
+                    output = HandleCorrectGuess(output, balancedNumber);
+                    if (returnOnNew)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        returnValue = true;
+                        continue;
+                    }
+                }
+                balancedNumber = KEquality_SweepForward(next, 100);
+                if (balancedNumber != null)
+                {
+                    output = HandleCorrectGuess(output, balancedNumber);
+                    if (returnOnNew)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        returnValue = true;
+                        continue;
+                    }
+                }
+                balancedNumber = KEquality_SweepBackward(next, 100);
+                if (balancedNumber != null)
+                {
+                    output = HandleCorrectGuess(output, balancedNumber);
+                    if (returnOnNew)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        returnValue = true;
+                        continue;
+                    }
+                }
+                return false;
+            }
+            return returnValue;
+        }
+
+        static void AddativeGuessSearch(object input)
+        {
+            AlgorithmData data = input as AlgorithmData;
+            AddativeGuessSearch(data.chunk, ref data.output, data.returnOnNew);
+        }
+
+        private static List<BalancedNumber> HandleCorrectGuess(List<BalancedNumber> output, BalancedNumber balancedNumber)
+        {
+            output.Add(balancedNumber);
+            Purge(ref output);
+            output.Sort();
+            kFactors.Add(balancedNumber);
+            Purge(ref kFactors);
+            kFactors.Sort();
+            Console.WriteLine("New Balanced Number: {0}", balancedNumber.number);
+            return output;
+        }
+
+        #endregion
+
+        #endregion
+
+        private static bool HandleBalancedNumber(ref List<BalancedNumber> output, BigInteger n)
+        {
+            Console.WriteLine("Possible Balanced Number: {0}, Checking validity", n);
+            BalancedNumber bn = AddativeInoptimized_CheckNumber(n);
+            if (bn != null)
+            {
+                output.Add(bn);
+                savedBalancedNumbers.Add(bn);
+                kFactors.Add(bn);
+                return true;
+            }
+            Console.WriteLine("FALSE POSITIVE: {0}", n);
+            return false;
+        }
     }
 }
