@@ -24,3 +24,6 @@ C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.csp
 C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.csproj.CoreCompileInputs.cache
 C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.exe
 C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.pdb
+C:\Users\alfred.engstromer\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.csproj.CopyComplete
+C:\Users\alfred.engstromer\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Extreme.Numerics.dll
+C:\Users\alfred.engstromer\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Extreme.Numerics.xml

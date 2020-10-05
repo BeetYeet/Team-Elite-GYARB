@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Numerics;
+using Extreme.Mathematics;
 
 namespace Team_Elite
 {
@@ -10,22 +10,20 @@ namespace Team_Elite
         public BigInteger number { get; private set; }
         public BigInteger sideSum { get; private set; }
         public BigInteger k { get; private set; }
-        public double kFactor { get; private set; }
+        public BigFloat kFactor { get; private set; }
 
         public BalancedNumber(BigInteger number, BigInteger sideSum, BigInteger k)
         {
             this.number = number;
             this.sideSum = sideSum;
             this.k = k;
-            kFactor = (double)k / (double)number;
+            kFactor = BigFloat.Divide(k, number, AccuracyGoal.Absolute(k.BitCount + 100), RoundingMode.TowardsNegativeInfinity);
         }
         public BalancedNumber() { }
 
         public int CompareTo(object obj)
         {
-            if (obj.GetType() == typeof(BalancedNumber))
-                return number.CompareTo(((BalancedNumber)obj).number);
-            return number.CompareTo(obj);
+            return number.CompareTo(((BalancedNumber)obj).number);
         }
 
         public void CreateFromBinaryStream(BinaryReader reader)
@@ -33,7 +31,7 @@ namespace Team_Elite
             number = BigInteger.Parse(reader.ReadString());
             sideSum = BigInteger.Parse(reader.ReadString());
             k = BigInteger.Parse(reader.ReadString());
-            kFactor = reader.ReadDouble();
+            kFactor = MathIO.ReadBigFloat(reader);
         }
 
         public void WriteToBinaryStream(BinaryWriter writer)
@@ -41,7 +39,7 @@ namespace Team_Elite
             writer.Write(number.ToString());
             writer.Write(sideSum.ToString());
             writer.Write(k.ToString());
-            writer.Write(kFactor);
+            kFactor.Write(writer);
         }
     }
 

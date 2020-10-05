@@ -39,6 +39,9 @@
     <StartupObject>Team_Elite.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Extreme.Numerics, Version=7.0.15.0, Culture=neutral, PublicKeyToken=9e513770f58567b2, processorArchitecture=MSIL">
+      <HintPath>..\packages\Extreme.Numerics.7.0.15\lib\net46\Extreme.Numerics.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Numerics" />
@@ -53,6 +56,7 @@
     <Compile Include="AlgorithmData.cs" />
     <Compile Include="BalancedNumber.cs" />
     <Compile Include="Chunk.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="ISaveable.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

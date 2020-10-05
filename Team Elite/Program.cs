@@ -1,10 +1,10 @@
-﻿using System;
+﻿using Extreme.Mathematics;
+using System;
 using System.CodeDom;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -72,7 +72,7 @@ namespace Team_Elite
             CultureInfo customCulture = (CultureInfo)Thread.CurrentThread.CurrentCulture.Clone();
             customCulture.NumberFormat.NumberDecimalSeparator = ".";
             Thread.CurrentThread.CurrentCulture = customCulture;
-            for (int i = 2; i < savedBalancedNumbers.Count; i++)
+            for (int i = 2; i < savedBalancedNumbers.Count; i += 1)
             {
                 BigInteger expected = GetNextExpected(savedBalancedNumbers[i - 2].number, savedBalancedNumbers[i - 1].number);
                 Console.WriteLine("Expected {0} and it was actually {1}", expected, savedBalancedNumbers[i].number);
@@ -88,7 +88,7 @@ namespace Team_Elite
             savedBalancedNumbers.AddRange(output);
             Purge(ref savedBalancedNumbers);
             savedBalancedNumbers.Sort();
-            for (int i = 0; i < savedBalancedNumbers.Count; i++)
+            for (int i = 0; i < savedBalancedNumbers.Count; i += 1)
             {
                 if (i > 0)
                     Console.WriteLine("#{0:00}-   n: {1:000000000000000000},   n/n-1: {2:0.00000000000000},   k: {3:0000000000000000000},   sum: {4}", i, savedBalancedNumbers[i].number, (double)savedBalancedNumbers[i].number / (double)savedBalancedNumbers[i - 1].number, savedBalancedNumbers[i].k, savedBalancedNumbers[i].sideSum);
@@ -117,7 +117,7 @@ namespace Team_Elite
         /// <returns>
         /// Largest known kFactor for a number lower than n
         /// </returns>
-        static double GetKFactor(BigInteger number)
+        static BigFloat GetKFactor(BigInteger number)
         {
             lock (kFactors)
             {
@@ -222,7 +222,7 @@ namespace Team_Elite
                 Chunk chunk = new Chunk(next, next + chunkSize);
                 Thread t = CreateThread(algorithm, string.Format("Thread #{0}", threadId), chunk, ref output);
                 threads.Add(t);
-                threadId++;
+                threadId += 1;
                 Console.WriteLine("New chunk starting at {0}", next);
                 next += chunkSize;
                 if (last < next)
@@ -297,7 +297,7 @@ namespace Team_Elite
                 while (sumBefore > sumAfter)
                 {
                     // final warmup the algorithm to quickly get it to the right numbers
-                    k++;
+                    k += 1;
                     sumAfter += k;
                 }
             }
@@ -308,7 +308,7 @@ namespace Team_Elite
                 while (sumBefore > sumAfter)
                 {
                     // warmup the algorithm to quickly get it to the right numbers
-                    k++;
+                    k += 1;
                     sumAfter += k;
                 }
             }
@@ -318,7 +318,7 @@ namespace Team_Elite
             {
                 if (sumBefore > sumAfter)
                 {
-                    k++;
+                    k += 1;
                     sumAfter += k;
                     continue;
                 }
@@ -333,7 +333,7 @@ namespace Team_Elite
                     }
                 }
                 sumBefore += n;
-                n++;
+                n += 1;
                 sumAfter -= n;
             }
             return returnValue;
@@ -367,7 +367,7 @@ namespace Team_Elite
                 while (sumBefore > sumAfter)
                 {
                     // final warmup the algorithm to quickly get it to the right numbers
-                    k++;
+                    k += 1;
                     sumAfter += k;
                 }
             }
@@ -378,7 +378,7 @@ namespace Team_Elite
                 while (sumBefore > sumAfter)
                 {
                     // warmup the algorithm to quickly get it to the right numbers
-                    k++;
+                    k += 1;
                     sumAfter += k;
                 }
             }
@@ -386,7 +386,7 @@ namespace Team_Elite
             {
                 if (sumBefore > sumAfter)
                 {
-                    k++;
+                    k += 1;
                     sumAfter += k;
                     continue;
                 }
@@ -400,7 +400,7 @@ namespace Team_Elite
                     }
                 }
                 sumBefore += n;
-                n++;
+                n += 1;
                 sumAfter -= n;
             }
             return returnValue;
@@ -421,7 +421,7 @@ namespace Team_Elite
         static bool AddativeInoptimizedSearch(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
         {
             bool returnValue = false;
-            for (BigInteger n = chunk.start; n <= chunk.end; n++)
+            for (BigInteger n = chunk.start; n <= chunk.end; n += 1)
             {
                 BalancedNumber bn = AddativeInoptimized_CheckNumber(n);
                 if (bn != null)
@@ -470,7 +470,7 @@ namespace Team_Elite
                     BalancedNumber bn = new BalancedNumber(n, sumBefore, k);
                     return bn;
                 }
-                k++;
+                k += 1;
             }
             return null;
         }
@@ -548,7 +548,7 @@ namespace Team_Elite
                     sumBeforeV = 0;
                 }
 
-                k++;
+                k += 1;
                 sumAfterV += k;
             }
 
@@ -564,7 +564,7 @@ namespace Team_Elite
                         sumAfterV = 0;
                     }
 
-                    k++;
+                    k += 1;
                     sumAfterV += k;
                     continue;
                 }
@@ -585,7 +585,7 @@ namespace Team_Elite
 
                 // sa>sb  or  sa=sb but we continue
                 sumBeforeV += n;
-                n++;
+                n += 1;
                 sumAfterV -= n;
                 if (sumBeforeV > domainCutoff)
                 {
@@ -657,7 +657,7 @@ namespace Team_Elite
             // fast forward
             while (sumBeforeV > sumAfterV)
             {
-                k++;
+                k += 1;
                 sumAfterV += k;
             }
 
@@ -673,7 +673,7 @@ namespace Team_Elite
                         sumAfterV -= sumBeforeV;
                         sumBeforeV = 0;
                     }
-                    k++;
+                    k += 1;
                     sumAfterV += k;
                     continue;
                 }
@@ -688,7 +688,7 @@ namespace Team_Elite
 
                 // sa>sb  or  sa=sb but we continue
                 sumBeforeV += n;
-                n++;
+                n += 1;
                 sumAfterV -= n;
                 if (sumBeforeV > domainCutoff)
                 {
@@ -720,13 +720,6 @@ namespace Team_Elite
             return last * last / lastlast;
         }
 
-        private static BigInteger LogDiff(BigInteger lastlast, BigInteger last)
-        {
-            double diff = BigInteger.Log10(last) - BigInteger.Log10(lastlast);
-            // the diffrence between diff1 and diff2 decreases as n goes up
-            return new BigInteger(Math.Pow(10, BigInteger.Log10(last) + diff));
-        }
-
 
         #region KEquality
 
@@ -734,7 +727,7 @@ namespace Team_Elite
         {
             int numTasks = allowedThreads * 10;
             Task[] tasks = new Task[numTasks];
-            for (int i = 0; i < numTasks; i++)
+            for (int i = 0; i < numTasks; i += 1)
             {
                 tasks[i] = Task.Factory.StartNew((object obj) => { return algorithm(obj); }, new kEqualityData(n, numTasks, i, stopAt));
             }
@@ -848,92 +841,70 @@ namespace Team_Elite
 
         public static BalancedNumber KEquality_CheckNumber_algebraic(BigInteger n, BigInteger stopAt)
         {
-            double val = (double)n * (double)n * 2;
+            BigInteger val = n * n * 2;
             // guess a bad k
-            double k = (double)n * GetKFactor(n) * kGuessRatio;
+            BigFloat k = (BigFloat)n * GetKFactor(n) * kGuessRatio;
             //Console.WriteLine("k starts as {0}", k);
-            double stopAtDouble = (double)stopAt;
-            while (k < stopAtDouble)
+            BigInteger stopAtBigFloat = stopAt;
+            while (k < stopAtBigFloat)
             {
-                double newk = Math.Sqrt(val - k);
+                BigFloat newk = BigFloat.Sqrt(val - k);
                 k = newk;
                 //Console.WriteLine("k is now {0}", k);
-                if (Math.Abs(newk - k) < .001)
+                if (BigFloat.Abs(newk - k) < .001)
                 {
-                    return KEquality_CheckNumber(n, new BigInteger(k));
+                    BigInteger kInt = BigInteger.Pow(k.Mantissa, k.Exponent);
+                    return KEquality_CheckNumber(n, kInt);
                 }
             }
             return null;
         }
-        public static BigInteger Sqrt(BigInteger n)
-        {
-            if (n == 0) return 0;
-            if (n > 0)
-            {
-                int bitLength = Convert.ToInt32(Math.Ceiling(BigInteger.Log(n, 2)));
-                BigInteger root = BigInteger.One << (bitLength / 2);
 
-                while (!isSqrt(n, root))
+        public static Task<BalancedNumber> KEquality_SweepForward(BigInteger n, BigInteger delta)
+        {
+            return Task.Factory.StartNew(() =>
+            {
+                Task[] tasks = new Task[(int)delta];
+                for (int i = 0; i < delta; i += 1)
                 {
-                    root += n / root;
-                    root /= 2;
+                    tasks[i] = Task.Factory.StartNew((object obj) => { return KEquality_CheckNumber_algebraic(obj); }, new KEqualityAlgrebreicData(n + i, (n + i) * 3 / 2));
                 }
 
-                return root;
-            }
+                Task.WaitAll(tasks);
 
-            throw new ArithmeticException("NaN");
-        }
-
-        private static Boolean isSqrt(BigInteger n, BigInteger root)
-        {
-            BigInteger lowerBound = root * root;
-            BigInteger upperBound = (root + 1) * (root + 1);
-
-            return (n >= lowerBound && n < upperBound);
-        }
-
-
-        public static BalancedNumber KEquality_SweepForward(BigInteger n, BigInteger delta)
-        {
-            Task[] tasks = new Task[(int)delta];
-            for (int i = 0; i < delta; i++)
-            {
-                tasks[i] = Task.Factory.StartNew((object obj) => { return KEquality_CheckNumber_algebraic(obj); }, new KEqualityAlgrebreicData(n + i, (n + i) * 3 / 2));
-            }
-            Task.WaitAll(tasks);
-
-            foreach (Task<BalancedNumber> t in tasks)
-            {
-                BalancedNumber result = t.Result;
-                if (result != null)
+                foreach (Task<BalancedNumber> t in tasks)
                 {
-                    return result;
+                    BalancedNumber result = t.Result;
+                    if (result != null)
+                    {
+                        return result;
+                    }
                 }
-            }
-
-            return null;
+                return null;
+            });
         }
 
-        public static BalancedNumber KEquality_SweepBackward(BigInteger n, BigInteger delta)
+        public static Task<BalancedNumber> KEquality_SweepBackward(BigInteger n, BigInteger delta)
         {
-            Task[] tasks = new Task[((int)delta) - 1];
-            for (int i = 1; i < delta; i++)
+            return Task.Factory.StartNew(() =>
             {
-                tasks[i - 1] = Task.Factory.StartNew((object obj) => { return KEquality_CheckNumber_algebraic(obj); }, new KEqualityAlgrebreicData(n - i, (n - i) * 3 / 2));
-            }
-            Task.WaitAll(tasks);
-
-            foreach (Task<BalancedNumber> t in tasks)
-            {
-                BalancedNumber result = t.Result;
-                if (result != null)
+                Task[] tasks = new Task[((int)delta) - 1];
+                for (int i = 1; i < delta; i += 1)
                 {
-                    return result;
+                    tasks[i - 1] = Task.Factory.StartNew((object obj) => { return KEquality_CheckNumber_algebraic(obj); }, new KEqualityAlgrebreicData(n - i, (n - i) * 3 / 2));
                 }
-            }
+                Task.WaitAll(tasks);
 
-            return null;
+                foreach (Task<BalancedNumber> t in tasks)
+                {
+                    BalancedNumber result = t.Result;
+                    if (result != null)
+                    {
+                        return result;
+                    }
+                }
+                return null;
+            });
         }
 
         #endregion
@@ -941,6 +912,10 @@ namespace Team_Elite
 
 
         #region AddativeGuess
+
+        static AccuracyGoal goal = AccuracyGoal.Absolute(1000);
+        static BigFloat root2 = BigFloat.Sqrt(2, goal);
+
         static bool AddativeGuessSearch(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
         {
             bool returnValue = false;
@@ -950,7 +925,9 @@ namespace Team_Elite
             {
                 BigInteger next = GetNextExpected(output[output.Count - 2].number, output[output.Count - 1].number);
                 Console.WriteLine("Guessing next balanced number is {0}", next);
-                BalancedNumber balancedNumber = KEquality_CheckNumber_algebraic(next, 3 * next / 2);
+                BigFloat stopAtFloat = new BigFloat(next) * root2;
+                BigInteger stopAt = BigInteger.Pow(stopAtFloat.Mantissa, stopAtFloat.Exponent) + 10;
+                BalancedNumber balancedNumber = KEquality_CheckNumber_algebraic(next, stopAt);
                 if (balancedNumber != null)
                 {
                     output = HandleCorrectGuess(output, balancedNumber);
@@ -964,35 +941,44 @@ namespace Team_Elite
                         continue;
                     }
                 }
-                balancedNumber = KEquality_SweepForward(next, 100);
-                if (balancedNumber != null)
+                Task<BalancedNumber>[] calculations = new Task<BalancedNumber>[2];
+                int count = 1;
+                while (count < 100)
                 {
-                    output = HandleCorrectGuess(output, balancedNumber);
-                    if (returnOnNew)
+                    Console.WriteLine("Now at extension {0}", count);
+                    calculations[0] = KEquality_SweepForward(next + BigInteger.Pow(10, count - 1), BigInteger.Pow(10, count));
+                    calculations[1] = KEquality_SweepBackward(next - BigInteger.Pow(10, count - 1) + 1, BigInteger.Pow(10, count));
+
+                    while (!calculations[0].IsCompleted && !calculations[1].IsCompleted)
                     {
-                        return true;
+                        Thread.Sleep(1000);
+                    }
+
+                    if (calculations[0].Result != null)
+                    {
+                        balancedNumber = calculations[0].Result;
                     }
                     else
                     {
-                        returnValue = true;
-                        continue;
+                        balancedNumber = calculations[1].Result;
                     }
-                }
-                balancedNumber = KEquality_SweepBackward(next, 100);
-                if (balancedNumber != null)
-                {
-                    output = HandleCorrectGuess(output, balancedNumber);
-                    if (returnOnNew)
+
+                    if (balancedNumber != null)
                     {
-                        return true;
+                        output = HandleCorrectGuess(output, balancedNumber);
+                        if (returnOnNew)
+                        {
+                            return true;
+                        }
+                        else
+                        {
+                            returnValue = true;
+                            continue;
+                        }
                     }
-                    else
-                    {
-                        returnValue = true;
-                        continue;
-                    }
+
+                    count += 1;
                 }
-                return false;
             }
             return returnValue;
         }
