@@ -12,11 +12,7 @@ namespace Team_Elite
     {
         public static BigInteger ReadBigInteger(BinaryReader reader)
         {
-            /// int byteCount
-            /// int sign
-            /// byte[] data
-            int byteCount = reader.ReadInt32();
-            BigInteger integer = new BigInteger(reader.ReadInt32(), reader.ReadBytes(byteCount));
+            BigInteger integer = BigInteger.Parse(reader.ReadString());
             return integer;
         }
         public static BigFloat ReadBigFloat(BinaryReader reader)
@@ -31,13 +27,7 @@ namespace Team_Elite
 
         public static void WriteBigInteger(BigInteger number, BinaryWriter writer)
         {
-            /// int byteCount
-            /// int sign
-            /// byte[] data
-            byte[] data = number.ToByteArray();
-            writer.Write(data.Length);
-            writer.Write(number.Sign);
-            writer.Write(data);
+            writer.Write(number.ToString());
         }
 
         public static void WriteBigFloat(BigFloat number, BinaryWriter writer)
@@ -53,8 +43,6 @@ namespace Team_Elite
 
     public static class Extensions
     {
-
-
         public static void Write(this BigFloat number, BinaryWriter writer)
         {
             MathIO.WriteBigFloat(number, writer);

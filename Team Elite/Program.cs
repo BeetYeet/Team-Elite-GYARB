@@ -45,66 +45,37 @@ namespace Team_Elite
         static void Main(string[] args)
         {
             // Define how many threads we can have
-            allowedThreads = lowPowerMode ? Environment.ProcessorCount - 5 : Environment.ProcessorCount - 1;
+            allowedThreads = lowPowerMode ? Environment.ProcessorCount / 2 : Environment.ProcessorCount - 1;
 
             savedBalancedNumbers = SaveSystem.LoadBalancedNumberList();
 
-            savedBalancedNumbers.Add(AddativeInoptimized_CheckNumber(6));
-            savedBalancedNumbers.Add(AddativeInoptimized_CheckNumber(35));
-            Purge(ref savedBalancedNumbers);
-
             kFactors = new List<BalancedNumber>(savedBalancedNumbers);
-
-            foreach (BalancedNumber balanced in savedBalancedNumbers)
-            {
-                if (checkNumbersAtStartup)
-                {
-                    if (AddativeInoptimized_CheckNumber(balanced.number) == null)
-                    {
-                        Console.WriteLine("Not Balanced Number: ", balanced.number);
-                    }
-                }
-                else
-                {
-                    Console.WriteLine(balanced.k);
-                }
-            }
             CultureInfo customCulture = (CultureInfo)Thread.CurrentThread.CurrentCulture.Clone();
             customCulture.NumberFormat.NumberDecimalSeparator = ".";
             Thread.CurrentThread.CurrentCulture = customCulture;
-            for (int i = 2; i < savedBalancedNumbers.Count; i += 1)
-            {
-                BigInteger expected = GetNextExpected(savedBalancedNumbers[i - 2].number, savedBalancedNumbers[i - 1].number);
-                Console.WriteLine("Expected {0} and it was actually {1}", expected, savedBalancedNumbers[i].number);
-            }
 
             // Debug that the startup has completed
             Console.WriteLine("Startup complete!");
 
 
-            Chunk domain = new Chunk(0, infinity);
-            List<BalancedNumber> output = savedBalancedNumbers.GetRange(0, 2);
-            SyncChunkDealer(AddativeGuessSearch, ref output, domain, infinity);
-            savedBalancedNumbers.AddRange(output);
-            Purge(ref savedBalancedNumbers);
-            savedBalancedNumbers.Sort();
-            for (int i = 0; i < savedBalancedNumbers.Count; i += 1)
+            Chunk domain = new Chunk(0, new BigInteger(1000000000000000000));
+            List<BalancedNumber> output = savedBalancedNumbers.GetRange(0, savedBalancedNumbers.Count-1);
+            while (!Console.KeyAvailable)
             {
-                if (i > 0)
-                    Console.WriteLine("#{0:00}-   n: {1:000000000000000000},   n/n-1: {2:0.00000000000000},   k: {3:0000000000000000000},   sum: {4}", i, savedBalancedNumbers[i].number, (double)savedBalancedNumbers[i].number / (double)savedBalancedNumbers[i - 1].number, savedBalancedNumbers[i].k, savedBalancedNumbers[i].sideSum);
-                else
-                    Console.WriteLine("#{0:00}-   n: {1:000000000000000000},   n/n-1:              N/A,   k: {2:0000000000000000000},   sum: {3}", i + 1, savedBalancedNumbers[i].number, savedBalancedNumbers[i].k, savedBalancedNumbers[i].sideSum);
-                if (i == 18)
-                    Console.WriteLine();
+                SyncChunkDealer(AddativeGuessSearch, ref output, domain, infinity);
+                savedBalancedNumbers.AddRange(output);
+                Purge(ref savedBalancedNumbers);
+                savedBalancedNumbers.Sort();
+                // Save the numbers
+                Console.WriteLine("Done! Saving...");
+                Purge(ref savedBalancedNumbers);
+                SaveSystem.SaveBalancedNumberList(savedBalancedNumbers);
+                Console.WriteLine("Saved {0} balanced numbers", savedBalancedNumbers.Count);
+
+                // Algorithm has finished, await user input
+                //Console.ReadLine();
+                domain = new Chunk(domain.end, domain.end * new BigInteger(1000000000000));
             }
-
-            // Save the numbers
-            Console.WriteLine("Done! Saving...");
-            Purge(ref savedBalancedNumbers);
-            SaveSystem.SaveBalancedNumberList(savedBalancedNumbers);
-            Console.WriteLine("Saved {0} balanced numbers", savedBalancedNumbers.Count);
-
-            // Algorithm has finished, await user input
             Console.ReadLine();
         }
 
@@ -121,7 +92,7 @@ namespace Team_Elite
         {
             lock (kFactors)
             {
-                double best = 1.3;
+                BigFloat best = 1.3;
                 foreach (BalancedNumber balancedNumber in kFactors)
                 {
                     if (number > balancedNumber.number)
@@ -360,7 +331,7 @@ namespace Team_Elite
             if (guessk)
             {
                 // Guess what k could be
-                k = new BigInteger((double)n * GetKFactor(n) * kGuessRatio);
+                k = (BigInteger)((double)n * GetKFactor(n) * kGuessRatio);
                 // Calculate the sumAfter for that k
                 sumAfter = (k * (k + 1) / 2) - sumBefore - n;
 
@@ -458,7 +429,7 @@ namespace Team_Elite
             BigInteger k = n + 1;
             if (guessk)
             {
-                k = new BigInteger((double)n * GetKFactor(n) * kGuessRatio);
+                k = (BigInteger)((double)n * GetKFactor(n) * kGuessRatio);
                 sumAfter = (k * (k - 1) / 2) - (n * (n + 1) / 2);
             }
             while (sumAfter < sumBefore)
@@ -765,7 +736,7 @@ namespace Team_Elite
         }
         public static BalancedNumber KEquality_CheckNumber_slow(BigInteger n, BigInteger increase, BigInteger offset, BigInteger stopAt)
         {
-            BigInteger k = new BigInteger((double)n * GetKFactor(n) * kGuessRatio) + offset;
+            BigInteger k = (BigInteger)((double)n * GetKFactor(n) * kGuessRatio) + offset;
 
             BigInteger sum = n * n * 2;
             while (k <= stopAt)
@@ -788,7 +759,7 @@ namespace Team_Elite
         }
         public static BalancedNumber KEquality_CheckNumber_mod(BigInteger n, BigInteger increase, BigInteger offset, BigInteger stopAt)
         {
-            BigInteger k = new BigInteger((double)n * GetKFactor(n) * kGuessRatio) + offset;
+            BigInteger k = (BigInteger)((double)n * GetKFactor(n) * kGuessRatio) + offset;
 
             BigInteger val = n * n * 2;
             while (k <= stopAt)
@@ -853,8 +824,7 @@ namespace Team_Elite
                 //Console.WriteLine("k is now {0}", k);
                 if (BigFloat.Abs(newk - k) < .001)
                 {
-                    BigInteger kInt = BigInteger.Pow(k.Mantissa, k.Exponent);
-                    return KEquality_CheckNumber(n, kInt);
+                    return KEquality_CheckNumber(n, (BigInteger)k);
                 }
             }
             return null;
