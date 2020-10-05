@@ -49,6 +49,12 @@ namespace Team_Elite
 
             savedBalancedNumbers = SaveSystem.LoadBalancedNumberList();
 
+            if (false) // set to true to just write the numbers to a file
+            {
+                SaveSystem.WriteToTxt(savedBalancedNumbers);
+                Console.ReadLine();
+            }
+
             kFactors = new List<BalancedNumber>(savedBalancedNumbers);
             CultureInfo customCulture = (CultureInfo)Thread.CurrentThread.CurrentCulture.Clone();
             customCulture.NumberFormat.NumberDecimalSeparator = ".";

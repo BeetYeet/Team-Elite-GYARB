@@ -84,6 +84,22 @@ namespace Team_Elite
             return result;
         }
 
+        public static void WriteToTxt(List<BalancedNumber> numbers)
+        {
+            StreamWriter writer = new StreamWriter(File.Open(basePath + "Balanced Numbers.txt", FileMode.OpenOrCreate));
+            int i = 0;
+            foreach (BalancedNumber bn in numbers)
+            {
+                writer.WriteLine("Balanced number #{0}", i);
+                
+                writer.WriteLine("\tNumber:  {0}", bn.number.ToString());
+                writer.WriteLine("\tK:       {0}", bn.k.ToString());
+                writer.WriteLine("\tSideNum: {0}", bn.sideSum.ToString());
+                writer.WriteLine("\tKfactor: {0}\n\r", bn.kFactor.ToString());
+                i++;
+            }
+        }
+
         public static void SaveLast(BigInteger last)
         {
             if (!Directory.Exists(basePath))
