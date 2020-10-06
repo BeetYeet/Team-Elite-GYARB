@@ -49,10 +49,14 @@ namespace Team_Elite
 
             savedBalancedNumbers = SaveSystem.LoadBalancedNumberList();
 
+            savedBalancedNumbers.Add(KEquality_CheckNumber(6, 8));
+            savedBalancedNumbers.Add(KEquality_CheckNumber(35, 49));
+            Purge(ref savedBalancedNumbers);
+
             if (false) // set to true to just write the numbers to a file
             {
-                SaveSystem.WriteToTxt(savedBalancedNumbers);
-                Console.ReadLine();
+                SaveToFile();
+                return;
             }
 
             kFactors = new List<BalancedNumber>(savedBalancedNumbers);
@@ -82,6 +86,14 @@ namespace Team_Elite
                 //Console.ReadLine();
                 domain = new Chunk(domain.end, domain.end * new BigInteger(1000000000000));
             }
+            Console.ReadLine();
+            SaveToFile();
+        }
+
+        private static void SaveToFile()
+        {
+            SaveSystem.WriteToTxt(savedBalancedNumbers);
+            Console.WriteLine("Wrote numbers to file");
             Console.ReadLine();
         }
 

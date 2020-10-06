@@ -91,11 +91,16 @@ namespace Team_Elite
             foreach (BalancedNumber bn in numbers)
             {
                 writer.WriteLine("Balanced number #{0}", i);
-                
+
                 writer.WriteLine("\tNumber:  {0}", bn.number.ToString());
                 writer.WriteLine("\tK:       {0}", bn.k.ToString());
                 writer.WriteLine("\tSideNum: {0}", bn.sideSum.ToString());
                 writer.WriteLine("\tKfactor: {0}\n\r", bn.kFactor.ToString());
+                if (i < numbers.Count - 1)
+                {
+                    BigFloat floatn = bn.number;
+                    writer.WriteLine("\tnFactor to next: {0}\n\r", BigFloat.Divide(numbers[i + 1].number, floatn, AccuracyGoal.Absolute(floatn.BinaryPrecision), RoundingMode.TowardsNearest).ToString());
+                }
                 i++;
             }
         }
