@@ -84,25 +84,64 @@ namespace Team_Elite
             return result;
         }
 
-        public static void WriteToTxt(List<BalancedNumber> numbers)
+        public static void WriteToTxt(List<BalancedNumber> numbers, bool extended)
         {
-            StreamWriter writer = new StreamWriter(File.Open(basePath + "Balanced Numbers.txt", FileMode.OpenOrCreate));
+            StreamWriter writer = new StreamWriter(File.Open(basePath + (extended ? "Balanced Numbers Extended.txt" : "Balanced Numbers.txt"), FileMode.OpenOrCreate));
             int i = 0;
             foreach (BalancedNumber bn in numbers)
             {
-                writer.WriteLine("Balanced number #{0}", i);
-
-                writer.WriteLine("\tNumber:  {0}", bn.number.ToString());
-                writer.WriteLine("\tK:       {0}", bn.k.ToString());
-                writer.WriteLine("\tSideNum: {0}", bn.sideSum.ToString());
-                writer.WriteLine("\tKfactor: {0}\n\r", bn.kFactor.ToString());
+                writer.WriteLine("Balanced number #{0}", i + 1);
+                writer.WriteLine("\tNumber:          {0}", bn.number.ToString());
+                if (extended)
+                    writer.WriteLine("\t  Digit Count:   {0}", GetDigits(bn.number).ToString());
+                writer.WriteLine("\tSideNum:         {0}", bn.sideSum.ToString());
+                if (extended)
+                    writer.WriteLine("\t  Digit Count:   {0}", GetDigits(bn.sideSum).ToString());
+                writer.WriteLine("\tK:               {0}", bn.k.ToString());
+                if (extended)
+                    writer.WriteLine("\t  Digit Count:   {0}", GetDigits(bn.k).ToString());
+                writer.WriteLine("\tKfactor:         {0}", bn.kFactor.ToString());
+                if (extended)
+                    TestRational(bn.k, bn.number, writer);
                 if (i < numbers.Count - 1)
                 {
                     BigFloat floatn = bn.number;
-                    writer.WriteLine("\tnFactor to next: {0}\n\r", BigFloat.Divide(numbers[i + 1].number, floatn, AccuracyGoal.Absolute(floatn.BinaryPrecision), RoundingMode.TowardsNearest).ToString());
+                    BigFloat quoitent = BigFloat.Divide(numbers[i + 1].number, floatn, AccuracyGoal.Absolute(floatn.BinaryPrecision), RoundingMode.TowardsNearest);
+                    writer.WriteLine("\tnFactor to next: {0}", quoitent.ToString());
+                    if (extended)
+                    {
+                        // check if it can be represented as a rational
+                        TestRational(numbers[i + 1].number, bn.number, writer);
+                    }
+                    writer.WriteLine();
                 }
+                else
+                    writer.WriteLine("\tnFactor to next: N/A\n");
                 i++;
             }
+            writer.WriteLine("\n\n");
+        }
+        /// <summary>
+        /// tests if a/b can be represented more effectively as a rational
+        /// </summary>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <param name="writer"></param>
+        private static void TestRational(BigInteger a, BigInteger b, StreamWriter writer)
+        {
+            BigRational rational = new BigRational(a, b);
+            if (rational.Denominator != b)
+            {
+                // they share prime factors
+                writer.WriteLine("\t  Can be represented as following rational:");
+                writer.WriteLine("\t\t{0} divided by", rational.Numerator.ToString());
+                writer.WriteLine("\t\t{0}", rational.Denominator.ToString());
+            }
+        }
+
+        public static int GetDigits(BigInteger number)
+        {
+            return number.ToString().Count();
         }
 
         public static void SaveLast(BigInteger last)

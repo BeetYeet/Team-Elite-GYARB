@@ -53,9 +53,9 @@ namespace Team_Elite
             savedBalancedNumbers.Add(KEquality_CheckNumber(35, 49));
             Purge(ref savedBalancedNumbers);
 
-            if (false) // set to true to just write the numbers to a file
+            if (true) // set to true to just write the numbers to a file
             {
-                SaveToFile();
+                WriteToFile();
                 return;
             }
 
@@ -87,13 +87,23 @@ namespace Team_Elite
                 domain = new Chunk(domain.end, domain.end * new BigInteger(1000000000000));
             }
             Console.ReadLine();
-            SaveToFile();
+            WriteToFile();
         }
 
-        private static void SaveToFile()
+        private static void WriteToFile()
         {
-            SaveSystem.WriteToTxt(savedBalancedNumbers);
-            Console.WriteLine("Wrote numbers to file");
+            Console.WriteLine("Writing simple stats to file...");
+            Stopwatch sw = Stopwatch.StartNew();
+            SaveSystem.WriteToTxt(savedBalancedNumbers, false);
+            sw.Stop();
+            Console.WriteLine("Done! Took {0:0.000} ms", sw.Elapsed.TotalMilliseconds);
+
+            Console.WriteLine("Writing full stats to file...");
+            sw.Restart();
+            SaveSystem.WriteToTxt(savedBalancedNumbers, true);
+            sw.Stop();
+            Console.WriteLine("Done! Took {0:0.000} ms", sw.Elapsed.TotalMilliseconds);
+            Console.WriteLine("Done saving");
             Console.ReadLine();
         }
 
