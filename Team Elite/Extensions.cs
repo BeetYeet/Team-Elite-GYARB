@@ -51,5 +51,56 @@ namespace Team_Elite
         {
             MathIO.WriteBigInteger(number, writer);
         }
+
+        public static List<int> Factorize(this BigInteger number)
+        {
+            List<int> factors = new List<int>();
+            int next = 0;
+            while (number > 1)
+            {
+                int prime = Program.primes[next];
+                if (number % prime == 0)
+                {
+                    factors.Add(prime);
+                    number /= prime;
+                }
+                else
+                {
+                    next += 1;
+                }
+            }
+            return factors;
+        }
+        public static Dictionary<int, int> FactorizeUnique(this BigInteger number)
+        {
+            Dictionary<int, int> uniqueFactors = new Dictionary<int, int>();
+            int next = 0;
+            while (number > 1)
+            {
+                int prime = 0;
+                try
+                {
+                    prime = Program.primes[next];
+                }
+                catch(ArgumentOutOfRangeException e)
+                {
+                    // make new primes
+                    Console.WriteLine("Make primes!");
+                }
+                if (number % prime == 0)
+                {
+                    if (uniqueFactors.ContainsKey(prime))
+                        uniqueFactors[prime]++;
+                    else
+                        uniqueFactors.Add(prime, 1);
+                    number /= prime;
+                }
+                else
+                {
+                    next += 1;
+                }
+            }
+            return uniqueFactors;
+        }
     }
 }

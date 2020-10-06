@@ -42,6 +42,49 @@ namespace Team_Elite
         /// </summary>
         const double kGuessRatio = 1;
 
+        public static List<int> primes;
+
+        public static void GenerateBasicPrimes(out List<int> output, int upperBound)
+        {
+            bool[] table = new bool[upperBound];
+
+            table[0] = false;
+            table[1] = false;
+
+            int i = 2;
+            while (i < upperBound)
+            {
+                for (int n = 1; i * n < upperBound; n++)
+                {
+                    table[i * n] = false;
+                }
+                int lastKey = 0;
+                for (int p = 0; p < table.Length; p++)
+                {
+                    lastKey = p;
+                    if (p <= i)
+                        continue;
+                    if (!table[p])
+                    {
+                        continue;
+                    }
+                    i = p;
+                    break;
+                }
+                if (lastKey != i)
+                {
+                    // no more primes
+                    break;
+                }
+            }
+            output = new List<int>();
+            for (int m = 0; m < table.Length; m++)
+            {
+                if (table[m])
+                    output.Add(m);
+            }
+        }
+
         static void Main(string[] args)
         {
             // Define how many threads we can have
@@ -52,6 +95,18 @@ namespace Team_Elite
             savedBalancedNumbers.Add(KEquality_CheckNumber(6, 8));
             savedBalancedNumbers.Add(KEquality_CheckNumber(35, 49));
             Purge(ref savedBalancedNumbers);
+
+            primes = SaveSystem.LoadPrimes();
+            if (true)
+            {
+                GenerateBasicPrimes(out primes, 400000);
+                SaveSystem.SavePrimes(primes);
+                Console.WriteLine("Saved {0} primes", primes.Count);
+            }
+            for (int i = 0; i < primes.Count; i++)
+            {
+                Console.WriteLine(primes[i]);
+            }
 
             if (true) // set to true to just write the numbers to a file
             {
@@ -69,7 +124,7 @@ namespace Team_Elite
 
 
             Chunk domain = new Chunk(0, new BigInteger(1000000000000000000));
-            List<BalancedNumber> output = savedBalancedNumbers.GetRange(0, savedBalancedNumbers.Count-1);
+            List<BalancedNumber> output = savedBalancedNumbers.GetRange(0, savedBalancedNumbers.Count - 1);
             while (!Console.KeyAvailable)
             {
                 SyncChunkDealer(AddativeGuessSearch, ref output, domain, infinity);

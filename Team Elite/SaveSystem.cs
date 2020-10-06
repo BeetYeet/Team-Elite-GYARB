@@ -90,10 +90,34 @@ namespace Team_Elite
             int i = 0;
             foreach (BalancedNumber bn in numbers)
             {
+                Dictionary<int, int> primeFactors = new Dictionary<int, int>();
+                int totalFactors = 0;
+                if (extended)
+                {
+                    primeFactors = bn.number.FactorizeUnique();
+                    foreach (int factorCount in primeFactors.Values)
+                    {
+                        totalFactors += factorCount;
+                    }
+                }
                 writer.WriteLine("Balanced number #{0}", i + 1);
                 writer.WriteLine("\tNumber:          {0}", bn.number.ToString());
                 if (extended)
+                {
                     writer.WriteLine("\t  Digit Count:   {0}", GetDigits(bn.number).ToString());
+                    writer.WriteLine("\t  Prime Factors: {0}", totalFactors);
+                    writer.Write("\t\t");
+                    foreach (var factor in primeFactors)
+                    {
+                        if (factor.Value == 1)
+                            writer.Write("{0}    ", factor.Key);
+                        else
+                            writer.Write("{0}^{1}  ", factor.Key, factor.Value);
+                    }
+                    writer.WriteLine();
+                }
+
+
                 writer.WriteLine("\tSideNum:         {0}", bn.sideSum.ToString());
                 if (extended)
                     writer.WriteLine("\t  Digit Count:   {0}", GetDigits(bn.sideSum).ToString());
@@ -137,6 +161,48 @@ namespace Team_Elite
                 writer.WriteLine("\t\t{0} divided by", rational.Numerator.ToString());
                 writer.WriteLine("\t\t{0}", rational.Denominator.ToString());
             }
+        }
+
+        public static void SavePrimes(List<int> primes)
+        {
+            if (!Directory.Exists(basePath))
+            {
+                Directory.CreateDirectory(basePath);
+            }
+            using (BinaryWriter writer = new BinaryWriter(File.Open(basePath + "PrimeDatabase.savedata", FileMode.Create)))
+            {
+                writer.Write(primes.Count);
+                foreach (int integer in primes)
+                {
+                    writer.Write(integer);
+                }
+            }
+        }
+
+        public static List<int> LoadPrimes()
+        {
+            if (!Directory.Exists(basePath))
+            {
+                Directory.CreateDirectory(basePath);
+            }
+            List<int> result = new List<int>();
+            try
+            {
+                using (BinaryReader reader = new BinaryReader(File.Open(basePath + "PrimeDatabase.savedata", FileMode.Open)))
+                {
+                    int length = reader.ReadInt32();
+                    for (int i = 0; i < length; i++)
+                    {
+                        result.Add(reader.ReadInt32());
+                    }
+                }
+            }
+            catch (FileNotFoundException e)
+            {
+                Console.WriteLine("Error loading list");
+                return new List<int>();
+            }
+            return result;
         }
 
         public static int GetDigits(BigInteger number)
