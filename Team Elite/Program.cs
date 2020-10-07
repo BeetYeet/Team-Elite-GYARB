@@ -89,23 +89,32 @@ namespace Team_Elite
             // Define how many threads we can have
             allowedThreads = lowPowerMode ? Environment.ProcessorCount / 2 : Environment.ProcessorCount - 1;
 
+            Stopwatch sw = Stopwatch.StartNew();
             savedBalancedNumbers = SaveSystem.LoadBalancedNumberList();
+            sw.Stop();
+            Console.WriteLine("Loaded {0} numbers in {1:0.000}ms", savedBalancedNumbers.Count, sw.Elapsed.Milliseconds);
 
             savedBalancedNumbers.Add(KEquality_CheckNumber(6, 8));
             savedBalancedNumbers.Add(KEquality_CheckNumber(35, 49));
             Purge(ref savedBalancedNumbers);
 
+            sw.Restart();
             primes = SaveSystem.LoadPrimes();
+            sw.Stop();
+            Console.WriteLine("Loaded {0} prime numbers in {1:0.000}ms", primes.Count, sw.Elapsed.Milliseconds);
+
             if (primes.Count < 100)
             {
                 GenerateBasicPrimes(out primes, 400000);
                 SaveSystem.SavePrimes(primes);
                 Console.WriteLine("Saved {0} primes", primes.Count);
             }
-            GenerateMorePrimes(10000000);
+            if (primes.Count < 100000)
+                GenerateMorePrimes(10000000);
+            Purge(ref primes);
             SaveSystem.SavePrimes(primes);
 
-            if (true) // set to true to just write the numbers to a file
+            if (false) // set to true to just write the numbers to a file
             {
                 WriteToFile();
                 return;
@@ -147,7 +156,7 @@ namespace Team_Elite
             for (int i = primes.Count; i < limit; i++)
             {
                 bool prime = true;
-                int rooti = (int) Math.Ceiling(Math.Sqrt(i));
+                int rooti = (int)Math.Ceiling(Math.Sqrt(i));
                 for (int j = 0; primes[j] < rooti; j++)
                 {
                     if (i % primes[j] == 0)
@@ -217,6 +226,15 @@ namespace Team_Elite
             List<BalancedNumber> distinct = balancedNumbers.Distinct(new BalancedNumberEqualityComparer()).ToList();
             distinct.Sort();
             balancedNumbers = distinct;
+        }
+        /// <summary>
+        /// Removes duplicates and sorts the given list
+        /// </summary>
+        /// <param name="numbers">The list to be purged</param>
+        static void Purge(ref List<BigInteger> numbers)
+        {
+            HashSet<BigInteger> unique_items = new HashSet<BigInteger>(numbers);
+            numbers = unique_items.ToList();
         }
 
         private static void Benchmark(ParameterizedThreadStart algorithm, Chunk domain, out List<BalancedNumber> output, bool debugNumbers = false)
