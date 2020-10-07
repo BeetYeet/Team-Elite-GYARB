@@ -8,7 +8,7 @@ using Extreme.Mathematics;
 
 namespace Team_Elite
 {
-    public static class MathIO
+    public static class MathExtras
     {
         public static BigInteger ReadBigInteger(BinaryReader reader)
         {
@@ -27,7 +27,14 @@ namespace Team_Elite
 
         public static void WriteBigInteger(BigInteger number, BinaryWriter writer)
         {
-            writer.Write(number.ToString());
+            try
+            {
+                writer.Write(number.ToString());
+            }
+            catch (ArgumentOutOfRangeException e)
+            {
+
+            }
         }
 
         public static void WriteBigFloat(BigFloat number, BinaryWriter writer)
@@ -45,20 +52,43 @@ namespace Team_Elite
     {
         public static void Write(this BigFloat number, BinaryWriter writer)
         {
-            MathIO.WriteBigFloat(number, writer);
+            MathExtras.WriteBigFloat(number, writer);
         }
         public static void Write(this BigInteger number, BinaryWriter writer)
         {
-            MathIO.WriteBigInteger(number, writer);
+            MathExtras.WriteBigInteger(number, writer);
         }
 
-        public static List<int> Factorize(this BigInteger number)
+        public static List<BigInteger> Factorize(this BigInteger number)
         {
-            List<int> factors = new List<int>();
+            List<BigInteger> factors = new List<BigInteger>();
             int next = 0;
             while (number > 1)
             {
-                int prime = Program.primes[next];
+                if (Program.primes.Count <= next)
+                {
+                    // out of primes
+                    if (Program.primes.Count < 1 || number < Program.primes[Program.primes.Count - 1] * Program.primes[Program.primes.Count - 1])
+                    {
+                        // prime!
+                        Program.primes.Add(-number);
+                        number = 1;
+                        break;
+                    }
+                    factors.Add(-number);
+                    number = 1;
+                    break;
+                }
+                else
+                {
+                    if (Program.primes[next] < 0)
+                    {
+                        // ran out of safe primes
+                        next = Program.primes.Count;
+                        continue;
+                    }
+                }
+                BigInteger prime = Program.primes[next];
                 if (number % prime == 0)
                 {
                     factors.Add(prime);
@@ -71,35 +101,20 @@ namespace Team_Elite
             }
             return factors;
         }
-        public static Dictionary<int, int> FactorizeUnique(this BigInteger number)
+        public static Dictionary<BigInteger, int> GetUniqueFactors(this List<BigInteger> factors)
         {
-            Dictionary<int, int> uniqueFactors = new Dictionary<int, int>();
-            int next = 0;
-            while (number > 1)
+            Dictionary<BigInteger, int> uniqueFactors = new Dictionary<BigInteger, int>();
+            factors.ForEach(n =>
             {
-                int prime = 0;
-                try
+                if (uniqueFactors.ContainsKey(n))
                 {
-                    prime = Program.primes[next];
-                }
-                catch(ArgumentOutOfRangeException e)
-                {
-                    // make new primes
-                    Console.WriteLine("Make primes!");
-                }
-                if (number % prime == 0)
-                {
-                    if (uniqueFactors.ContainsKey(prime))
-                        uniqueFactors[prime]++;
-                    else
-                        uniqueFactors.Add(prime, 1);
-                    number /= prime;
+                    uniqueFactors[n]++;
                 }
                 else
                 {
-                    next += 1;
+                    uniqueFactors.Add(n, 1);
                 }
-            }
+            });
             return uniqueFactors;
         }
     }

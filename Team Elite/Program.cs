@@ -42,47 +42,46 @@ namespace Team_Elite
         /// </summary>
         const double kGuessRatio = 1;
 
-        public static List<int> primes;
+        public static List<BigInteger> primes;
 
-        public static void GenerateBasicPrimes(out List<int> output, int upperBound)
+        public static void GenerateBasicPrimes(out List<BigInteger> output, int upperBound)
         {
             bool[] table = new bool[upperBound];
-
-            table[0] = false;
-            table[1] = false;
+            for (int a = 2; a < upperBound; a++)
+            {
+                table[a] = true;
+            }
 
             int i = 2;
             while (i < upperBound)
             {
-                for (int n = 1; i * n < upperBound; n++)
+                for (int n = 2; i * n < upperBound; n++)
                 {
                     table[i * n] = false;
                 }
-                int lastKey = 0;
-                for (int p = 0; p < table.Length; p++)
-                {
-                    lastKey = p;
-                    if (p <= i)
-                        continue;
-                    if (!table[p])
-                    {
-                        continue;
-                    }
-                    i = p;
-                    break;
-                }
-                if (lastKey != i)
-                {
-                    // no more primes
-                    break;
-                }
+
+                i = GetNextPrime(i, upperBound, ref table);
+                if (i == 0)
+                    break; // no more primes
             }
-            output = new List<int>();
+            output = new List<BigInteger>();
             for (int m = 0; m < table.Length; m++)
             {
                 if (table[m])
                     output.Add(m);
             }
+        }
+
+        private static int GetNextPrime(int current, int upperBound, ref bool[] table)
+        {
+            for (int i = current + 1; i < upperBound; i++)
+            {
+                if (table[i])
+                {
+                    return i;
+                }
+            }
+            return 0;
         }
 
         static void Main(string[] args)
@@ -97,18 +96,16 @@ namespace Team_Elite
             Purge(ref savedBalancedNumbers);
 
             primes = SaveSystem.LoadPrimes();
-            if (true)
+            if (primes.Count < 100)
             {
                 GenerateBasicPrimes(out primes, 400000);
                 SaveSystem.SavePrimes(primes);
                 Console.WriteLine("Saved {0} primes", primes.Count);
-            }
-            for (int i = 0; i < primes.Count; i++)
-            {
-                Console.WriteLine(primes[i]);
+
+                
             }
 
-            if (true) // set to true to just write the numbers to a file
+            if (false) // set to true to just write the numbers to a file
             {
                 WriteToFile();
                 return;
@@ -123,8 +120,8 @@ namespace Team_Elite
             Console.WriteLine("Startup complete!");
 
 
-            Chunk domain = new Chunk(0, new BigInteger(1000000000000000000));
-            List<BalancedNumber> output = savedBalancedNumbers.GetRange(0, savedBalancedNumbers.Count - 1);
+            Chunk domain = new Chunk(0, SaveSystem.LoadLast());
+            List<BalancedNumber> output = savedBalancedNumbers.GetRange(0, savedBalancedNumbers.Count);
             while (!Console.KeyAvailable)
             {
                 SyncChunkDealer(AddativeGuessSearch, ref output, domain, infinity);
@@ -133,13 +130,13 @@ namespace Team_Elite
                 savedBalancedNumbers.Sort();
                 // Save the numbers
                 Console.WriteLine("Done! Saving...");
-                Purge(ref savedBalancedNumbers);
+                SaveSystem.SaveLast(savedBalancedNumbers[savedBalancedNumbers.Count-1].number);
                 SaveSystem.SaveBalancedNumberList(savedBalancedNumbers);
                 Console.WriteLine("Saved {0} balanced numbers", savedBalancedNumbers.Count);
 
                 // Algorithm has finished, await user input
                 //Console.ReadLine();
-                domain = new Chunk(domain.end, domain.end * new BigInteger(1000000000000));
+                domain = new Chunk(domain.end, domain.end * new BigInteger(10000000000000000));
             }
             Console.ReadLine();
             WriteToFile();
@@ -180,8 +177,8 @@ namespace Team_Elite
                 {
                     if (number > balancedNumber.number)
                     {
-                        if (balancedNumber.kFactor > best)
-                            best = balancedNumber.kFactor;
+                        if (balancedNumber.KFactor > best)
+                            best = balancedNumber.KFactor;
                     }
                 }
                 //Console.WriteLine("kFactor is {0}", best);
