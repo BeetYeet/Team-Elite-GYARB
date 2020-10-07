@@ -101,11 +101,11 @@ namespace Team_Elite
                 GenerateBasicPrimes(out primes, 400000);
                 SaveSystem.SavePrimes(primes);
                 Console.WriteLine("Saved {0} primes", primes.Count);
-
-                
             }
+            GenerateMorePrimes(10000000);
+            SaveSystem.SavePrimes(primes);
 
-            if (false) // set to true to just write the numbers to a file
+            if (true) // set to true to just write the numbers to a file
             {
                 WriteToFile();
                 return;
@@ -130,7 +130,7 @@ namespace Team_Elite
                 savedBalancedNumbers.Sort();
                 // Save the numbers
                 Console.WriteLine("Done! Saving...");
-                SaveSystem.SaveLast(savedBalancedNumbers[savedBalancedNumbers.Count-1].number);
+                SaveSystem.SaveLast(savedBalancedNumbers[savedBalancedNumbers.Count - 1].number);
                 SaveSystem.SaveBalancedNumberList(savedBalancedNumbers);
                 Console.WriteLine("Saved {0} balanced numbers", savedBalancedNumbers.Count);
 
@@ -140,6 +140,29 @@ namespace Team_Elite
             }
             Console.ReadLine();
             WriteToFile();
+        }
+
+        private static void GenerateMorePrimes(int limit)
+        {
+            for (int i = primes.Count; i < limit; i++)
+            {
+                bool prime = true;
+                int rooti = (int) Math.Ceiling(Math.Sqrt(i));
+                for (int j = 0; primes[j] < rooti; j++)
+                {
+                    if (i % primes[j] == 0)
+                    {
+                        prime = false;
+                        break;
+                    }
+                }
+                if (prime)
+                {
+                    primes.Add(i);
+                    //Console.WriteLine(i);
+                }
+            }
+            Console.WriteLine("All primes done");
         }
 
         private static void WriteToFile()
