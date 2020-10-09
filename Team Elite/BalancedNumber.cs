@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
+using System.Threading.Tasks;
 using Extreme.Mathematics;
 
 namespace Team_Elite
@@ -45,6 +46,20 @@ namespace Team_Elite
             List<BigInteger> kFactorNumeratorFactors = kFactorRational.Numerator.Factorize();
             List<BigInteger> kFactorDenominatorFactors = kFactorRational.Denominator.Factorize();
             primeFactors = new FactorSet(numberFactors, kPrimeFactors, sideSumFactors, kFactorNumeratorFactors, kFactorDenominatorFactors);
+        }
+
+        public Task CalculatePrimeFactors()
+        {
+            if (primeFactors == null)
+            {
+                return Task.Factory.StartNew(GeneratePrimeFactors);
+            }
+            return null;
+        }
+
+        public Task RecalculatePrimeFactors()
+        {
+            return Task.Factory.StartNew(GeneratePrimeFactors);
         }
 
         private FactorSet primeFactors = null;

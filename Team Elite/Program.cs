@@ -1,4 +1,5 @@
-﻿using Extreme.Mathematics;
+﻿using Extreme.DataAnalysis;
+using Extreme.Mathematics;
 using System;
 using System.CodeDom;
 using System.Collections.Generic;
@@ -86,6 +87,28 @@ namespace Team_Elite
 
         static void Main(string[] args)
         {
+            if(false)
+            {
+                string input = Console.ReadLine();
+                while (input != "")
+                {
+                    BigInteger num;
+                    if (BigInteger.TryParse(input, out num))
+                    {
+                        Console.WriteLine("Calculating...\r");
+                        bool isPrime = MathExtras.MillerTest(num);
+                        Console.WriteLine("Calculations concluded that number {0} is {1}", num, isPrime ? "prime" : "not prime");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid input, please enter a number");
+                    }
+                    input = Console.ReadLine();
+                }
+                return;
+            }
+
+
             // Define how many threads we can have
             allowedThreads = lowPowerMode ? Environment.ProcessorCount / 2 : Environment.ProcessorCount - 1;
 
@@ -114,6 +137,8 @@ namespace Team_Elite
             Purge(ref primes);
             SaveSystem.SavePrimes(primes);
 
+            savedBalancedNumbers.RecalculatePrimeFactors();
+
             if (false) // set to true to just write the numbers to a file
             {
                 WriteToFile();
@@ -137,6 +162,11 @@ namespace Team_Elite
                 savedBalancedNumbers.AddRange(output);
                 Purge(ref savedBalancedNumbers);
                 savedBalancedNumbers.Sort();
+
+                // Do some prime factorization
+                Console.WriteLine("Prime Factoring...");
+                savedBalancedNumbers.CalculatePrimeFactors();
+
                 // Save the numbers
                 Console.WriteLine("Done! Saving...");
                 SaveSystem.SaveLast(savedBalancedNumbers[savedBalancedNumbers.Count - 1].number);

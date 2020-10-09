@@ -114,7 +114,7 @@ namespace Team_Elite
                 }
                 writer.WriteLine("\tKfactor:         {0}", bn.KFactor.ToString());
                 if (extended)
-                    TestRational(bn.k, bn.PrimeFactors.k, bn.number, bn.PrimeFactors.number, writer);
+                    TestRational(bn.k, bn.PrimeFactors.kFactorNumerator, bn.number, bn.PrimeFactors.kFactorDenominator, writer);
                 if (i < numbers.Count - 1)
                 {
                     BigFloat floatn = bn.number;
@@ -131,20 +131,20 @@ namespace Team_Elite
 
         private static void WritePrimeFactors(List<BigInteger> factors, StreamWriter writer, string whiteSpace = "")
         {
-            Dictionary<BigInteger, int> primeFactors = new Dictionary<BigInteger, int>();
+            Dictionary<BigInteger, int> primeFactors = factors.GetUniqueFactors();
             int totalFactors = factors.Count;
-            primeFactors = factors.GetUniqueFactors();
             writer.WriteLine(whiteSpace + "\t  Prime Factors ({0}):", totalFactors);
             writer.Write(whiteSpace + "\t\t");
             foreach (var factor in primeFactors)
             {
                 if (factor.Key < 0)
                 {
-                    // possibly prime
-                    writer.Write("  \"{0}\" which might not be prime", -factor.Key);
+                    // composite, as denoted by being negative
+                    writer.Write("  and an additional factor of \"{0}\", which is composite", -factor.Key);
                 }
                 else
                 {
+                    // prime
                     if (factor.Value == 1)
                         writer.Write("{0}  ", factor.Key);
                     else
