@@ -553,8 +553,8 @@ Balanced number #23
 Balanced number #24
 	Number:          2433376321462076761
 	  Digit Count:   19
-	  Prime Factors (4):
-		29  41  1549  29201  
+	  Prime Factors (5):
+		29  41  1549  29201  45245801  
 	SideNum:         5921320321852308336183691173594174360
 	  Digit Count:   37
 	  Prime Factors (18):
@@ -629,8 +629,8 @@ Balanced number #27
 		2^2  3  13^2  17  113  239  337    and an additional factor of "1535466241", which is composite
 	SideNum:         232127599106207807996659249629629345744892
 	  Digit Count:   42
-	  Prime Factors (13):
-		2^2  3  7  13^2  17  113  199  239  337  7761799    and an additional factor of "68421116022472631909", which is composite
+	  Prime Factors (14):
+		2^2  3  7  13^2  17  113  199  239  337  7761799  1535466241  44560482149  
 	K:               681362750825443653408
 	  Digit Count:   21
 	  Prime Factors (17):
@@ -649,12 +649,12 @@ Balanced number #27
 Balanced number #28
 	Number:          2808114166320660573949
 	  Digit Count:   22
-	  Prime Factors (1):
-		  and an additional factor of "2808114166320660573949", which is composite
+	  Prime Factors (2):
+		63018038201  44560482149  
 	SideNum:         7885505171090778556467770012586981436880652
 	  Digit Count:   43
-	  Prime Factors (16):
-		2^2  3^3  11  13^2  19  59  113  239  337  601  2281  63018038201  
+	  Prime Factors (17):
+		2^2  3^3  11  13^2  19  59  113  239  337  601  2281  63018038201  44560482149  
 	K:               3971273138702695316401
 	  Digit Count:   22
 	  Prime Factors (2):
@@ -677,8 +677,8 @@ Balanced number #29
 		2  3^2  5^2  7  11  19  29  31^2  41  59  269  601  2281  
 	SideNum:         267875048217980263111986148374984718004267850
 	  Digit Count:   45
-	  Prime Factors (19):
-		2  3^2  5^2  7  11  19  29  31^2  41  59  61  269  601  1301  2281  3272609  
+	  Prime Factors (20):
+		2  3^2  5^2  7  11  19  29  31^2  41  59  61  269  601  1301  2281  3272609  63018038201  
 	K:               23146276081390728245000
 	  Digit Count:   23
 	  Prime Factors (19):
@@ -725,8 +725,8 @@ Balanced number #31
 		2^5  3  17  257  577  1409  665857  2448769  
 	SideNum:         309127573515950117423442349480912266404616562080
 	  Digit Count:   48
-	  Prime Factors (16):
-		2^5  3  5  17  257  577  1409  5741  424577  665857  865087  2448769  
+	  Prime Factors (17):
+		2^5  3  5  17  257  577  1409  5741  424577  665857  865087  2448769  52734529  
 	K:               786292024016459316676608
 	  Digit Count:   24
 	  Prime Factors (19):
@@ -745,16 +745,16 @@ Balanced number #31
 Balanced number #32
 	Number:          3240561314557720840260385
 	  Digit Count:   25
-	  Prime Factors (6):
-		5  7  23  353  5741    and an additional factor of "1986378978532609", which is composite
+	  Prime Factors (7):
+		5  7  23  353  5741  37667521  52734529  
 	SideNum:         10501237633408063754229803930591215324193760087840
 	  Digit Count:   50
-	  Prime Factors (19):
-		2^5  3^2  5  7  17  23  67  353  577  5741  33931  665857  757793  52734529  
+	  Prime Factors (20):
+		2^5  3^2  5  7  17  23  67  353  577  5741  33931  665857  757793  37667521  52734529  
 	K:               4582845760749114225906049
 	  Digit Count:   25
-	  Prime Factors (7):
-		7^2  23^2  353^2    and an additional factor of "1418842138285441", which is composite
+	  Prime Factors (8):
+		7^2  23^2  353^2  37667521^2  
 	Kfactor:         1.414213562373095048801688569915441168870947566971196
 	  Can be represented as following rational:
 		2140758220993
@@ -773,8 +773,8 @@ Balanced number #33
 		2  3  67  103  137  8297  15607  33931  757793  
 	SideNum:         356732951962358217526389982026337216372366753715262
 	  Digit Count:   51
-	  Prime Factors (16):
-		2  3  7  13^2  23  29  67  103  137  353  8297  15607  33931  757793    and an additional factor of "67808842323339841", which is composite
+	  Prime Factors (17):
+		2  3  7  13^2  23  29  67  103  137  353  8297  15607  33931  757793  37667521    and an additional factor of "1800193921", which is composite
 	K:               26710782540478226038759688
 	  Digit Count:   26
 	  Prime Factors (11):
@@ -793,16 +793,16 @@ Balanced number #33
 Balanced number #34
 	Number:          110083691476470624995299139
 	  Digit Count:   27
-	  Prime Factors (7):
-		13^2  29  41  71  239    and an additional factor of "32284805592982391", which is composite
+	  Prime Factors (8):
+		13^2  29  41  71  239  17934071    and an additional factor of "1800193921", which is composite
 	SideNum:         12118419129086771332143030113811387166135223098842182
 	  Digit Count:   53
 	  Prime Factors (17):
 		2  13^2  17  29  41  71  103  137  239  1009  1153  8297  15607  1523089  17934071    and an additional factor of "1800193921", which is composite
 	K:               155681849482120242006652081
 	  Digit Count:   27
-	  Prime Factors (7):
-		41^2  71^2  239^2    and an additional factor of "321630902633041", which is composite
+	  Prime Factors (8):
+		41^2  71^2  239^2  17934071^2  
 	Kfactor:         1.414213562373095048801688719667699229386181383569102984
 	  Can be represented as following rational:
 		12477253282759
@@ -821,8 +821,8 @@ Balanced number #35
 		2^2  3^3  5  7  11  17  73  179  197  199  1009  1153  1523089  
 	SideNum:         411669517436987867075336636969904187773402718475294820
 	  Digit Count:   54
-	  Prime Factors (22):
-		2^2  3^3  5  7  11  17  41  71  73  179  197  199  239  593  1009  1153  78737  1101341  1523089  
+	  Prime Factors (23):
+		2^2  3^3  5  7  11  17  41  71  73  179  197  199  239  593  1009  1153  78737  1101341  1523089  17934071  
 	K:               907380314352243226001152800
 	  Digit Count:   27
 	  Prime Factors (25):
@@ -917,8 +917,8 @@ Balanced number #39
 		2^3  3  17  19  29  41  59  241  577  5521  188801  9393281  
 	SideNum:         548226059743771732840848904902022496053646398355181803727432
 	  Digit Count:   60
-	  Prime Factors (19):
-		2^3  3  7  17  19  29  41  59  79  241  313  577  599  5521  188801  4088137  9393281  
+	  Prime Factors (20):
+		2^3  3  7  17  19  29  41  59  79  241  313  577  599  5521  188801  4088137  9393281  1746860020068409  
 	K:               1047116096470464666346013655168
 	  Digit Count:   31
 	  Prime Factors (23):
@@ -937,8 +937,8 @@ Balanced number #39
 Balanced number #40
 	Number:          4315500870452487274745056273129
 	  Digit Count:   31
-	  Prime Factors (3):
-		2297  302663  3553471  
+	  Prime Factors (4):
+		2297  302663  3553471  1746860020068409  
 	SideNum:         18623547762876175355857183483576206784154137683546129991177512
 	  Digit Count:   62
 	  Prime Factors (23):
@@ -965,8 +965,8 @@ Balanced number #41
 		2  3^2  5  7^2  11  13^2  83  113  239  251  337  4663  45697  75937  
 	SideNum:         632652397878046190366303389536809842189559704485906099471955590
 	  Digit Count:   63
-	  Prime Factors (21):
-		2  3^2  5  7^2  11  13^2  83  113  239  251  337  2297  4663  11437  45697  75937  302663  3553471  
+	  Prime Factors (22):
+		2  3^2  5  7^2  11  13^2  83  113  239  251  337  2297  4663  11437  45697  75937  302663  3553471  890220016097  
 	K:               35571123060090362864306463840200
 	  Digit Count:   32
 	  Prime Factors (19):
@@ -985,12 +985,12 @@ Balanced number #41
 Balanced number #42
 	Number:          146599993110813938731970911633931
 	  Digit Count:   33
-	  Prime Factors (4):
-		11437  19609  153511  4783321  
+	  Prime Factors (5):
+		11437  19609  153511  4783321  890220016097  
 	SideNum:         21491557980090694297098458060768662699966121724825292593238878830
 	  Digit Count:   65
 	  Prime Factors (17):
-		2  5  7^2  13^2  17  239  2113  4663  11437  19609  45697  153511  4783321  967724510017  890220016097  
+		2  5  7^2  13^2  17  239  2113  4663  11437  19609  45697  153511  4783321  890220016097  967724510017  
 	K:               207323698501115372597396703458641
 	  Digit Count:   33
 	  Prime Factors (6):
@@ -1009,8 +1009,8 @@ Balanced number #42
 Balanced number #43
 	Number:          854447376334672561390706141819076
 	  Digit Count:   33
-	  Prime Factors (11):
-		2^2  3  17  23  43  89  353  2113  5741  11483  
+	  Prime Factors (12):
+		2^2  3  17  23  43  89  353  2113  5741  11483  967724510017  
 	SideNum:         730080318925205559910981270676601826756465681729858537256175674700
 	  Digit Count:   66
 	  Prime Factors (22):
@@ -1041,8 +1041,8 @@ Balanced number #44
 		2^2  3^2  5^2  7  23  29  31^2  41  43  89  197  199  269  353  643  5741  6481  11483  238321  700027  150039121    and an additional factor of "1529035201", which is composite
 	K:               7042902709178495863723045838011249
 	  Digit Count:   34
-	  Prime Factors (11):
-		7^2  31^4  41^2  199^2    and an additional factor of "2337948645897110401", which is composite
+	  Prime Factors (12):
+		7^2  31^4  41^2  199^2  1529035201    and an additional factor of "1529035201", which is composite
 	Kfactor:         1.4142135623730950488016887242096979781697642825846484092576800193619
 	  Can be represented as following rational:
 		83922003724759193
@@ -1057,12 +1057,12 @@ Balanced number #44
 Balanced number #45
 	Number:          29026058213048656016282889493864074
 	  Digit Count:   35
-	  Prime Factors (8):
-		2  3  47  229  643  700027  982789  6771937  
+	  Prime Factors (9):
+		2  3  47  229  643  700027  982789  6771937  150039121  
 	SideNum:         842512055387289338091082020057409928248180701989821023678406094013402
 	  Digit Count:   69
-	  Prime Factors (16):
-		2  3  7  31^2  41  47  199  229  643  3761  700027  982789  6771937  150039121    and an additional factor of "140613289327594459945601", which is composite
+	  Prime Factors (17):
+		2  3  7  31^2  41  47  199  229  643  3761  700027  982789  6771937  150039121  1529035201  91962100830401  
 	K:               41049045187124373309618201271155848
 	  Digit Count:   35
 	  Prime Factors (11):
@@ -1072,6 +1072,13 @@ Balanced number #45
 		286527643298598236
 		  Prime Factors (6):
 			2^2  47  229  982789  6771937  
+		divided by
+		202605639573839043
+		  Prime Factors (4):
+			3  643  700027  150039121  
+	nFactor to next: N/A
+
+9  982789  6771937  
 		divided by
 		202605639573839043
 		  Prime Factors (4):

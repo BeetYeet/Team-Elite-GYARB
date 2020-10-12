@@ -140,7 +140,7 @@ namespace Team_Elite
                 if (factor.Key < 0)
                 {
                     // composite, as denoted by being negative
-                    writer.Write("  and an additional factor of \"{0}\", which is composite", -factor.Key);
+                    writer.Write("  and {1} of \"{0}\", which is composite", -factor.Key, factor.Value > 1 ? "two additional factors" : "an additional factor");
                 }
                 else
                 {

@@ -7,3 +7,4 @@ C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.csp
 C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.csproj.CopyComplete
 C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.exe
 C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.pdb
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.csprojAssemblyReference.cache

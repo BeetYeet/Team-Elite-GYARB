@@ -1,39 +1,33 @@
-﻿using Extreme.DataAnalysis;
-using Extreme.Mathematics;
+﻿using Extreme.Mathematics;
 using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Team_Elite
 {
-    class Program
+    internal class Program
     {
-        static int allowedThreads;
-        const bool lowPowerMode = false;
+        private static int allowedThreads;
+        private const bool lowPowerMode = false;
 
         /// <summary>
         /// Represents a practically infinite quantity. Used to mark Chunk to only end at infinity
         /// </summary>
-        static readonly BigInteger infinity = BigInteger.Pow(new BigInteger(10), 100000);
+        private static readonly BigInteger infinity = BigInteger.Pow(new BigInteger(10), 100000);
 
         private static List<BalancedNumber> savedBalancedNumbers = new List<BalancedNumber>();
 
-        const bool checkNumbersAtStartup = false;
+        private const bool checkNumbersAtStartup = false;
 
         /// <summary>
         /// Should we try to guess k
         /// </summary>
-        const bool guessk = true;
+        private const bool guessk = true;
 
         private static List<BalancedNumber> kFactors = new List<BalancedNumber>();
 
@@ -41,7 +35,7 @@ namespace Team_Elite
         /// How close to the expected k do we dare to guess.
         /// If current n is greater than the n that generated kFactor this can safely be 1
         /// </summary>
-        const double kGuessRatio = 1;
+        private const double kGuessRatio = 1;
 
         public static List<BigInteger> primes;
 
@@ -85,9 +79,9 @@ namespace Team_Elite
             return 0;
         }
 
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
-            if(false)
+            if (false)
             {
                 string input = Console.ReadLine();
                 while (input != "")
@@ -95,9 +89,41 @@ namespace Team_Elite
                     BigInteger num;
                     if (BigInteger.TryParse(input, out num))
                     {
+                        MathExtras.PrimeFactorizationResult res = new MathExtras.PrimeFactorizationResult();
                         Console.WriteLine("Calculating...\r");
-                        bool isPrime = MathExtras.MillerTest(num);
-                        Console.WriteLine("Calculations concluded that number {0} is {1}", num, isPrime ? "prime" : "not prime");
+
+                        CancellationTokenSource token = new CancellationTokenSource();
+                        Task<MathExtras.PrimeFactorizationResult>[] tasks = new Task<MathExtras.PrimeFactorizationResult>[10000];
+                        try
+                        {
+                            for (int i = 0; i < 10000; i++)
+                            {
+                                tasks[i] = Task<MathExtras.PrimeFactorizationResult>.Factory.StartNew(() =>
+                                {
+                                    var result = MathExtras.PollardsBrentRho(num);
+                                    if (result.result != MathExtras.PrimeFactorizationResultEvaluation.Faliure)
+                                    {
+                                        token.Token.Register(() => res = result);
+                                        token.Cancel();
+                                    }
+                                    return result;
+                                });
+                            }
+                            Task.WaitAll(tasks, token.Token);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            if (res.result == MathExtras.PrimeFactorizationResultEvaluation.FactorFound)
+                            {
+                                Console.WriteLine("Calculations concluded that number {0} has a factor of {1}", num, res.primeFactor);
+                            }
+                            else
+                            {
+                                Console.WriteLine("Calculations concluded that number {0} is prime", num);
+                            }
+                            continue;
+                        }
+                        Console.WriteLine("There was an issue factorizing");
                     }
                     else
                     {
@@ -107,7 +133,6 @@ namespace Team_Elite
                 }
                 return;
             }
-
 
             // Define how many threads we can have
             allowedThreads = lowPowerMode ? Environment.ProcessorCount / 2 : Environment.ProcessorCount - 1;
@@ -137,7 +162,8 @@ namespace Team_Elite
             Purge(ref primes);
             SaveSystem.SavePrimes(primes);
 
-            savedBalancedNumbers.RecalculatePrimeFactors();
+            //savedBalancedNumbers.RecalculatePrimeFactors();
+            SaveSystem.SaveBalancedNumberList(savedBalancedNumbers);
 
             if (false) // set to true to just write the numbers to a file
             {
@@ -152,7 +178,6 @@ namespace Team_Elite
 
             // Debug that the startup has completed
             Console.WriteLine("Startup complete!");
-
 
             Chunk domain = new Chunk(0, SaveSystem.LoadLast());
             List<BalancedNumber> output = savedBalancedNumbers.GetRange(0, savedBalancedNumbers.Count);
@@ -230,7 +255,7 @@ namespace Team_Elite
         /// <returns>
         /// Largest known kFactor for a number lower than n
         /// </returns>
-        static BigFloat GetKFactor(BigInteger number)
+        private static BigFloat GetKFactor(BigInteger number)
         {
             lock (kFactors)
             {
@@ -247,21 +272,23 @@ namespace Team_Elite
                 return best;
             }
         }
+
         /// <summary>
         /// Removes duplicates and sorts the given list
         /// </summary>
         /// <param name="balancedNumbers">The list to be purged</param>
-        static void Purge(ref List<BalancedNumber> balancedNumbers)
+        private static void Purge(ref List<BalancedNumber> balancedNumbers)
         {
             List<BalancedNumber> distinct = balancedNumbers.Distinct(new BalancedNumberEqualityComparer()).ToList();
             distinct.Sort();
             balancedNumbers = distinct;
         }
+
         /// <summary>
         /// Removes duplicates and sorts the given list
         /// </summary>
         /// <param name="numbers">The list to be purged</param>
-        static void Purge(ref List<BigInteger> numbers)
+        private static void Purge(ref List<BigInteger> numbers)
         {
             HashSet<BigInteger> unique_items = new HashSet<BigInteger>(numbers);
             numbers = unique_items.ToList();
@@ -295,7 +322,7 @@ namespace Team_Elite
             Console.WriteLine("Calculations took {0:0.00}s, for an average of {1:0.0}n/s", secondsTaken, numbersPerSecond);
         }
 
-        static BigInteger SyncChunkDealer(Algorithm algorithm, ref List<BalancedNumber> output, Chunk domain, BigInteger chunkSize)
+        private static BigInteger SyncChunkDealer(Algorithm algorithm, ref List<BalancedNumber> output, Chunk domain, BigInteger chunkSize)
         {
             BigInteger next = domain.start;
             if (next < 2)
@@ -322,7 +349,8 @@ namespace Team_Elite
             }
             return last;
         }
-        static BigInteger AsyncChunkDealer(ParameterizedThreadStart algorithm, ref List<BalancedNumber> output, Chunk domain, BigInteger chunkSize)
+
+        private static BigInteger AsyncChunkDealer(ParameterizedThreadStart algorithm, ref List<BalancedNumber> output, Chunk domain, BigInteger chunkSize)
         {
             List<Thread> threads = new List<Thread>();
             BigInteger next = domain.start;
@@ -378,7 +406,7 @@ namespace Team_Elite
             return last;
         }
 
-        static Thread CreateThread(ParameterizedThreadStart algorithm, string name, Chunk chunk, ref List<BalancedNumber> output)
+        private static Thread CreateThread(ParameterizedThreadStart algorithm, string name, Chunk chunk, ref List<BalancedNumber> output)
         {
             Thread t = new Thread(algorithm);
             t.Name = name;
@@ -387,9 +415,9 @@ namespace Team_Elite
             return t;
         }
 
+        private delegate bool Algorithm(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew);
 
-        delegate bool Algorithm(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew);
-        #endregion
+        #endregion framework
 
         #region gen_1
 
@@ -400,7 +428,7 @@ namespace Team_Elite
         /// </summary>
         /// <param name="chunk">Domain of the search</param>
         /// <param name="output">Output buffer</param>
-        static bool AddativeOptimizedSearch_old(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
+        private static bool AddativeOptimizedSearch_old(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
         {
             bool returnValue = false;
             if (chunk.end * chunk.end / 2 > ulong.MaxValue)
@@ -435,7 +463,6 @@ namespace Team_Elite
                 }
             }
 
-
             while (n < chunk.end)
             {
                 if (sumBefore > sumAfter)
@@ -460,20 +487,23 @@ namespace Team_Elite
             }
             return returnValue;
         }
-        static void AddativeOptimizedSearch_old(object input)
+
+        private static void AddativeOptimizedSearch_old(object input)
         {
             AlgorithmData data = input as AlgorithmData;
             AddativeOptimizedSearch_old(data.chunk, ref data.output, data.returnOnNew);
         }
-        #endregion
+
+        #endregion AddativeOptimized_old
 
         #region AddativeOptimized
+
         /// <summary>
         /// Fast algorithm that has to run continusly
         /// </summary>
         /// <param name="chunk">Domain of the search</param>
         /// <param name="output">Output buffer</param>
-        static bool AddativeOptimizedSearch(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
+        private static bool AddativeOptimizedSearch(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
         {
             bool returnValue = false;
             BigInteger n = chunk.start;
@@ -527,20 +557,23 @@ namespace Team_Elite
             }
             return returnValue;
         }
-        static void AddativeOptimizedSearch(object input)
+
+        private static void AddativeOptimizedSearch(object input)
         {
             AlgorithmData data = input as AlgorithmData;
             AddativeOptimizedSearch(data.chunk, ref data.output, data.returnOnNew);
         }
-        #endregion
+
+        #endregion AddativeOptimized
 
         #region AddativeInoptimized
+
         /// <summary>
         /// Baseline algorithm, should always be right
         /// </summary>
         /// <param name="chunk">Domain of the search</param>
         /// <param name="output">Output buffer</param>
-        static bool AddativeInoptimizedSearch(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
+        private static bool AddativeInoptimizedSearch(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
         {
             bool returnValue = false;
             for (BigInteger n = chunk.start; n <= chunk.end; n += 1)
@@ -558,22 +591,24 @@ namespace Team_Elite
             }
             return returnValue;
         }
+
         /// <summary>
         /// Baseline algorithm, should always be right
         /// </summary>
         /// <param name="chunk">Domain of the search</param>
         /// <param name="output">Output buffer</param>
-        static void AddativeInoptimizedSearch(object input)
+        private static void AddativeInoptimizedSearch(object input)
         {
             AlgorithmData data = input as AlgorithmData;
             AddativeInoptimizedSearch(data.chunk, ref data.output, data.returnOnNew);
         }
+
         /// <summary>
         /// Baseline algorithm, should always be right
         /// </summary>
         /// <param name="chunk">Domain of the search</param>
         /// <param name="output">Output buffer</param>
-        static BalancedNumber AddativeInoptimized_CheckNumber(BigInteger n)
+        private static BalancedNumber AddativeInoptimized_CheckNumber(BigInteger n)
         {
             BigInteger sumBefore = n * (n - 1) / 2;
             BigInteger sumAfter = 0;
@@ -596,16 +631,18 @@ namespace Team_Elite
             }
             return null;
         }
-        #endregion
-        #endregion
+
+        #endregion AddativeInoptimized
+
+        #endregion gen_1
 
         #region gen_2
 
-
         #region HybridAlgorithm
 
-        static bool aboveLimit = false;
-        static void HybridSearch(object input)
+        private static bool aboveLimit = false;
+
+        private static void HybridSearch(object input)
         {
             AlgorithmData data = input as AlgorithmData;
             if (!aboveLimit)
@@ -627,11 +664,12 @@ namespace Team_Elite
             Console.WriteLine("Chunk ended at {0}", data.chunk.end);
         }
 
-        #endregion
-
+        #endregion HybridAlgorithm
 
         #region AddativeOptimized_superior
-        const ulong domainCutoff = ulong.MaxValue / 10 * 6;
+
+        private const ulong domainCutoff = ulong.MaxValue / 10 * 6;
+
         /// <summary>
         /// Algortithm that juggles data types to optimize calculation times
         /// </summary>
@@ -640,7 +678,7 @@ namespace Team_Elite
         /// </remarks>
         /// <param name="chunk">Domain of the search</param>
         /// <param name="output">Output buffer</param>
-        static bool AddativeOptimizedSearch_superior(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
+        private static bool AddativeOptimizedSearch_superior(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
         {
             bool returnValue = false;
             // safe
@@ -718,15 +756,17 @@ namespace Team_Elite
             Console.WriteLine("Chunk done!");
             return returnValue;
         }
-        static void AddativeOptimizedSearch_superior(object input)
+
+        private static void AddativeOptimizedSearch_superior(object input)
         {
             AlgorithmData data = input as AlgorithmData;
             AddativeOptimizedSearch_superior(data.chunk, ref data.output, data.returnOnNew);
         }
 
-        #endregion
+        #endregion AddativeOptimized_superior
 
         #region AddativeOptimized_superior_volotile
+
         /// <summary>
         /// Works with numbers under 21 billion
         /// </summary>
@@ -734,7 +774,7 @@ namespace Team_Elite
         /// <param name="output"></param>
         /// <param name="returnOnNew"></param>
         /// <returns></returns>
-        static bool AddativeOptimizedSearch_superiorVolotile(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
+        private static bool AddativeOptimizedSearch_superiorVolotile(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
         {
             bool returnValue = false;
             // safe
@@ -821,14 +861,16 @@ namespace Team_Elite
             }
             return returnValue;
         }
-        static void AddativeOptimizedSearch_superiorVolotile(object input)
+
+        private static void AddativeOptimizedSearch_superiorVolotile(object input)
         {
             AlgorithmData data = input as AlgorithmData;
             AddativeOptimizedSearch_superiorVolotile(data.chunk, ref data.output, data.returnOnNew);
         }
-        #endregion
 
-        #endregion
+        #endregion AddativeOptimized_superior_volotile
+
+        #endregion gen_2
 
         #region gen_3
 
@@ -841,7 +883,6 @@ namespace Team_Elite
         {
             return last * last / lastlast;
         }
-
 
         #region KEquality
 
@@ -867,6 +908,7 @@ namespace Team_Elite
         }
 
         public delegate object kEqualityAlgorithm(object data);
+
         public struct kEqualityData
         {
             public BigInteger n, increase, offset, stopAt;
@@ -885,6 +927,7 @@ namespace Team_Elite
             kEqualityData info = (kEqualityData)data;
             return KEquality_CheckNumber_slow(info.n, info.increase, info.offset, info.stopAt);
         }
+
         public static BalancedNumber KEquality_CheckNumber_slow(BigInteger n, BigInteger increase, BigInteger offset, BigInteger stopAt)
         {
             BigInteger k = (BigInteger)((double)n * GetKFactor(n) * kGuessRatio) + offset;
@@ -903,11 +946,13 @@ namespace Team_Elite
             }
             return null;
         }
+
         public static BalancedNumber KEquality_CheckNumber_mod(object data)
         {
             kEqualityData info = (kEqualityData)data;
             return KEquality_CheckNumber_mod(info.n, info.increase, info.offset, info.stopAt);
         }
+
         public static BalancedNumber KEquality_CheckNumber_mod(BigInteger n, BigInteger increase, BigInteger offset, BigInteger stopAt)
         {
             BigInteger k = (BigInteger)((double)n * GetKFactor(n) * kGuessRatio) + offset;
@@ -949,12 +994,14 @@ namespace Team_Elite
         public struct KEqualityAlgrebreicData
         {
             public BigInteger n, stopAt;
+
             public KEqualityAlgrebreicData(BigInteger n, BigInteger stopAt)
             {
                 this.n = n;
                 this.stopAt = stopAt;
             }
         }
+
         public static BalancedNumber KEquality_CheckNumber_algebraic(object obj)
         {
             KEqualityAlgrebreicData data = (KEqualityAlgrebreicData)obj;
@@ -1028,16 +1075,14 @@ namespace Team_Elite
             });
         }
 
-        #endregion
-
-
+        #endregion KEquality
 
         #region AddativeGuess
 
-        static AccuracyGoal goal = AccuracyGoal.Absolute(1000);
-        static BigFloat root2 = BigFloat.Sqrt(2, goal);
+        private static AccuracyGoal goal = AccuracyGoal.Absolute(1000);
+        private static BigFloat root2 = BigFloat.Sqrt(2, goal);
 
-        static bool AddativeGuessSearch(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
+        private static bool AddativeGuessSearch(Chunk chunk, ref List<BalancedNumber> output, bool returnOnNew)
         {
             bool returnValue = false;
             if (output.Count < 2)
@@ -1104,7 +1149,7 @@ namespace Team_Elite
             return returnValue;
         }
 
-        static void AddativeGuessSearch(object input)
+        private static void AddativeGuessSearch(object input)
         {
             AlgorithmData data = input as AlgorithmData;
             AddativeGuessSearch(data.chunk, ref data.output, data.returnOnNew);
@@ -1122,9 +1167,9 @@ namespace Team_Elite
             return output;
         }
 
-        #endregion
+        #endregion AddativeGuess
 
-        #endregion
+        #endregion gen_3
 
         private static bool HandleBalancedNumber(ref List<BalancedNumber> output, BigInteger n)
         {
