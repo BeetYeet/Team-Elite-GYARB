@@ -8,3 +8,19 @@ C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.csp
 C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.exe
 C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.pdb
 C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\obj\Debug\Team Elite.csprojAssemblyReference.cache
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Google.Apis.Auth.dll
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Google.Apis.Auth.PlatformServices.dll
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Google.Apis.Core.dll
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Google.Apis.dll
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Google.Apis.PlatformServices.dll
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Google.Apis.Sheets.v4.dll
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Newtonsoft.Json.dll
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Google.Apis.pdb
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Google.Apis.xml
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Google.Apis.Auth.pdb
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Google.Apis.Auth.xml
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Google.Apis.Core.pdb
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Google.Apis.Core.xml
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Google.Apis.Sheets.v4.pdb
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Google.Apis.Sheets.v4.xml
+C:\Users\RuskiBoi\Documents\Team-Elite-GYARB\Team Elite\bin\Debug\Newtonsoft.Json.xml

@@ -1,8 +1,14 @@
 ﻿using Extreme.Mathematics;
+using Google.Apis.Auth.OAuth2;
+using Google.Apis.Services;
+using Google.Apis.Sheets.v4;
+using Google.Apis.Sheets.v4.Data;
+using Google.Apis.Util.Store;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -134,43 +140,82 @@ namespace Team_Elite
                 return;
             }
 
-            // Define how many threads we can have
-            allowedThreads = lowPowerMode ? Environment.ProcessorCount / 2 : Environment.ProcessorCount - 1;
+            PrepareData();
 
-            Stopwatch sw = Stopwatch.StartNew();
-            savedBalancedNumbers = SaveSystem.LoadBalancedNumberList();
-            sw.Stop();
-            Console.WriteLine("Loaded {0} numbers in {1:0.000}ms", savedBalancedNumbers.Count, sw.Elapsed.Milliseconds);
+            List<BigInteger> stn = STN(1000);
 
-            savedBalancedNumbers.Add(KEquality_CheckNumber(6, 8));
-            savedBalancedNumbers.Add(KEquality_CheckNumber(35, 49));
-            Purge(ref savedBalancedNumbers);
-
-            sw.Restart();
-            primes = SaveSystem.LoadPrimes();
-            sw.Stop();
-            Console.WriteLine("Loaded {0} prime numbers in {1:0.000}ms", primes.Count, sw.Elapsed.Milliseconds);
-
-            if (primes.Count < 100)
+            for (int i = 0; i < savedBalancedNumbers.Count; i++)
             {
-                GenerateBasicPrimes(out primes, 400000);
-                SaveSystem.SavePrimes(primes);
-                Console.WriteLine("Saved {0} primes", primes.Count);
-            }
-            if (primes.Count < 100000)
-                GenerateMorePrimes(10000000);
-            Purge(ref primes);
-            SaveSystem.SavePrimes(primes);
-
-            //savedBalancedNumbers.RecalculatePrimeFactors();
-            SaveSystem.SaveBalancedNumberList(savedBalancedNumbers);
-
-            if (false) // set to true to just write the numbers to a file
-            {
-                WriteToFile();
-                return;
+                Console.Write("Number {0}: ", savedBalancedNumbers[i].number);
+                for (int j = 0; j < stn.Count; j++)
+                {
+                    if (savedBalancedNumbers[i].number == stn[j])
+                    {
+                        Console.WriteLine("STN({0})", j);
+                        break;
+                    }
+                    if (j == stn.Count - 1)
+                    {
+                        Console.WriteLine("No STN found");
+                    }
+                }
             }
 
+            Console.ReadLine();
+        }
+
+        private static void Check(long b, long a)
+        {
+            if(6 * a * b - a * a + 1 == b * b)
+            {
+                Console.WriteLine("Check");
+            }
+            else
+            {
+                Console.WriteLine("Failed");
+            }
+        }
+
+        public static BigInteger SquareRoot(BigInteger x)
+        {
+            BigInteger n = 1;
+            BigInteger n1 = Next(n, x);
+            while (BigInteger.Abs(n1 - n) > 1)
+            {
+                n = n1;
+                n1 = Next(n, x);
+            }
+            while (n1.Square() > x)
+                n1 -= 1;
+            return n1;
+        }
+
+        static BigInteger Next(BigInteger n, BigInteger i)
+        {
+            return (n + i / n) / 2;
+        }
+
+        private static List<BigInteger> STN(int count)
+        {
+            if (count < 3)
+            {
+                throw new ArgumentOutOfRangeException("Not enough STNs requested");
+            }
+            List<BigInteger> numbers = new List<BigInteger>();
+            // stn: N = s^2 = t(t+1)/2 where B=s
+            // calculate some numbers
+            numbers.Add(0);
+            numbers.Add(1);
+            for (int i = 2; i < count; i++)
+            {
+                numbers.Add(34 * numbers[i - 1] - numbers[i - 2] + 2);
+                //Console.WriteLine("Biginteger: {0}?", SquareRoot(numbers[numbers.Count-1]));
+            }
+            return numbers;
+        }
+
+        private static void CalculateMore()
+        {
             kFactors = new List<BalancedNumber>(savedBalancedNumbers);
             CultureInfo customCulture = (CultureInfo)Thread.CurrentThread.CurrentCulture.Clone();
             customCulture.NumberFormat.NumberDecimalSeparator = ".";
@@ -204,6 +249,140 @@ namespace Team_Elite
             }
             Console.ReadLine();
             WriteToFile();
+        }
+
+        private static void PrepareData()
+        {
+            // Define how many threads we can have
+            allowedThreads = lowPowerMode ? Environment.ProcessorCount / 2 : Environment.ProcessorCount - 1;
+
+            Stopwatch sw = Stopwatch.StartNew();
+            savedBalancedNumbers = SaveSystem.LoadBalancedNumberList();
+            sw.Stop();
+            Console.WriteLine("Loaded {0} numbers in {1:0.000}ms", savedBalancedNumbers.Count, sw.Elapsed.Milliseconds);
+
+            savedBalancedNumbers.Add(KEquality_CheckNumber(6, 8));
+            savedBalancedNumbers.Add(KEquality_CheckNumber(35, 49));
+            Purge(ref savedBalancedNumbers);
+
+            sw.Restart();
+            primes = SaveSystem.LoadPrimes();
+            sw.Stop();
+            Console.WriteLine("Loaded {0} prime numbers in {1:0.000}ms", primes.Count, sw.Elapsed.Milliseconds);
+
+            if (primes.Count < 100)
+            {
+                GenerateBasicPrimes(out primes, 400000);
+                SaveSystem.SavePrimes(primes);
+                Console.WriteLine("Saved {0} primes", primes.Count);
+            }
+            if (primes.Count < 100000)
+                GenerateMorePrimes(10000000);
+            Purge(ref primes);
+            SaveSystem.SavePrimes(primes);
+
+            //savedBalancedNumbers.RecalculatePrimeFactors();
+            SaveSystem.SaveBalancedNumberList(savedBalancedNumbers);
+        }
+
+
+        // If modifying these scopes, delete your previously saved credentials
+        // at ~/.credentials/sheets.googleapis.com-dotnet-quickstart.json
+        static string[] Scopes = { SheetsService.Scope.Spreadsheets };
+        static string ApplicationName = "Google Sheets API .NET Quickstart";
+        const string identifierTemplate = "Team Elite Gyarb v.{0} - {1:MM/dd/yyyy H:mm:ss zzz}";
+        const int version = 1;
+
+        private static void WriteToSheets()
+        {
+            UserCredential credential;
+
+            using (var stream =
+                new FileStream("credentials.json", FileMode.Open, FileAccess.Read))
+            {
+                // The file token.json stores the user's access and refresh tokens, and is created
+                // automatically when the authorization flow completes for the first time.
+                string credPath = "token.json";
+                credential = GoogleWebAuthorizationBroker.AuthorizeAsync(
+                    GoogleClientSecrets.Load(stream).Secrets,
+                    Scopes,
+                    "user",
+                    CancellationToken.None,
+                    new FileDataStore(credPath, true)).Result;
+                Console.WriteLine("Credential file saved to: " + credPath);
+            }
+
+            // Create Google Sheets API service.
+            var service = new SheetsService(new BaseClientService.Initializer()
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = ApplicationName,
+            });
+
+
+            var values = new List<IList<object>>();
+            // Balanced Number | B(n)/B(n-1) | K | K/B | K/B rational representation | K/B Numerator | K/B Denominator | Side Sum
+            for (int i = 0; i < savedBalancedNumbers.Count; i++)
+            {
+                values.Add(new List<object>());
+                BalancedNumber number = savedBalancedNumbers[i];
+                values[i].Add(number.number.ToString());
+                if (i == 0)
+                {
+                    values[i].Add("");
+                }
+                else values[i].Add((new BigFloat(number.number) / savedBalancedNumbers[i - 1].number).ToString());
+                values[i].Add(number.k.ToString());
+                values[i].Add(number.KFactor.ToString());
+                values[i].Add(number.kFactorRational.ToString());
+                values[i].Add(number.kFactorRational.Numerator.ToString());
+                values[i].Add(number.kFactorRational.Denominator.ToString());
+                values[i].Add(number.sideSum.ToString());
+            }
+
+            ValueRange data = new ValueRange();
+            data.Values = values;
+            data.MajorDimension = "ROWS";
+            string range = "Sheet1!A2";
+
+            // Define request parameters.
+            string spreadsheetId = "101adNIHcBDTCsdx_0UGvW8niXtH1tSHF4r5V6vtvjWU";
+            SpreadsheetsResource.ValuesResource.UpdateRequest request =
+                    service.Spreadsheets.Values.Update(data, spreadsheetId, range);
+            request.ValueInputOption = SpreadsheetsResource.ValuesResource.UpdateRequest.ValueInputOptionEnum.RAW;
+            UpdateValuesResponse response = request.Execute();
+
+            Console.WriteLine("Status: " + response.UpdatedRange.ToString());
+            Console.WriteLine("Updated " + response.UpdatedCells + " cells");
+
+            /*IList<IList<Object>> values = response.Values;
+            if (values != null && values.Count > 0)
+            {
+                Console.WriteLine("Number, Sum");
+                foreach (var row in values)
+                {
+                    // Print columns A and E, which correspond to indices 0 and 4.
+                    Console.WriteLine("{0}, {1}", row[0], row[4]);
+                }
+            }
+            else
+            {
+                Console.WriteLine("No data found.");
+            }*/
+
+        }
+
+        private static void CreateSheet(SheetsService service)
+        {
+            string identifier = string.Format(identifierTemplate, version, DateTime.Now);
+            Console.WriteLine("Creating new google sheets doc named: \"" + identifier + "\"");
+
+            var myNewSheet = new Spreadsheet();
+            myNewSheet.Properties = new SpreadsheetProperties();
+            myNewSheet.Properties.Title = identifier;
+            var sheet = service.Spreadsheets.Create(myNewSheet).Execute();
+
+            Console.WriteLine("New sheet created as \"" + identifier + "\", sheet has id: " + sheet.SpreadsheetId);
         }
 
         private static void GenerateMorePrimes(int limit)
